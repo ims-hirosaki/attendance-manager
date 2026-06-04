@@ -74,7 +74,10 @@ class AM_Compute_Jiba {
         $affiliation_id = AM_DB::get_affiliation_id_by_code( $employee_code );
         $shitei_rules   = ( AM_DB::get_active_rules_by_affiliation() )[ $affiliation_id ] ?? [];
         $saved_kintai   = AM_DB::get_jiba_saved_kintai( $employee_code, $year_month );
-        $has_saved      = ! empty( $saved_kintai );
+        // kintai_type が空でない行が1件以上ある場合のみ has_saved = true
+        $has_saved = ! empty( array_filter( $saved_kintai, function( $r ) {
+            return $r['kintai_type'] !== '';
+        } ) );
 
         $dow_ja = [ 'Sun'=>'日','Mon'=>'月','Tue'=>'火','Wed'=>'水','Thu'=>'木','Fri'=>'金','Sat'=>'土' ];
         $rows = []; $cursor = new DateTime( $start_date ); $last = new DateTime( $end_date );
@@ -95,25 +98,34 @@ class AM_Compute_Jiba {
                 $ci = $mat['clock_in']  ? substr( $mat['clock_in'],  0, 5 ) : '';
                 $co = $mat['clock_out'] ? substr( $mat['clock_out'], 0, 5 ) : '';
                 $bm = isset( $mat['break_minutes'] ) && $mat['break_minutes'] !== null ? (int) $mat['break_minutes'] : 0;
-                $start_time = $ci; $end_time = $co;
+                $start_time = $ci;
                 if ( $ci !== '' && $co !== '' ) {
                     list( $sh, $sm ) = array_map( 'intval', explode( ':', $ci ) );
                     list( $eh, $em ) = array_map( 'intval', explode( ':', $co ) );
                     $st = $sh * 60 + $sm; $et = $eh * 60 + $em;
-                    if ( $et <= $st ) $et += 1440;
+                    // 日跨ぎ → 24時間形式で表示
+                    if ( $et <= $st ) {
+                        $co = ( $eh + 24 ) . ':' . str_pad( $em, 2, '0', STR_PAD_LEFT );
+                        $et += 1440;
+                    }
+                    $end_time = $co;
                     $kousoku = $et - $st; $labor = $kousoku - $bm;
                     $kousoku_min = $kousoku; $labor_min = max( 0, $labor );
                     $break_calc_min = $bm; $overtime_min = max( 0, $labor - 480 );
+                } else {
+                    $end_time = $co;
                 }
             }
 
             $is_shitei = self::is_shitei_holiday( $date_str, $dow_num, $shitei_rules );
-            $default_kintai = $mat !== null ? '出勤' : ( $is_sun ? '法定休' : ( $is_shitei ? '所定休' : '' ) );
+            // has_data: mat または chokyo フラグON時のkousoku どちらかにデータがあれば true
+            $has_data = ( $mat !== null );
+            $default_kintai = $has_data ? '出勤' : ( $is_sun ? '法定休' : ( $is_shitei ? '所定休' : '' ) );
 
             $rows[] = [
                 'date' => $date_str, 'dow' => $dow, 'dow_num' => $dow_num,
                 'is_sun' => $is_sun, 'is_sat' => $is_sat, 'is_shitei_holiday' => $is_shitei,
-                'has_data' => $mat !== null, 'default_kintai' => $default_kintai,
+                'has_data' => $has_data, 'default_kintai' => $default_kintai,
                 'furikae_label' => '', 'is_manual' => false, 'chokyo' => false,
                 'hayatai_min' => 0, 'note' => '',
                 'start_time' => $start_time, 'end_time' => $end_time,
@@ -157,21 +169,51 @@ class AM_Compute_Jiba {
                 }
 
                 $r['start_time'] = $start_time;
-                $r['end_time']   = $end_time;
-
                 if ( $k ) {
-                    $kousoku = (int) $k['kousoku_total_min']; $labor = (int) $k['actual_work_min'];
+                    $drive_min = isset( $k['drive_min'] ) && $k['drive_min'] !== null ? (int) $k['drive_min'] : null;
+                    $cargo_min = isset( $k['cargo_min'] ) && $k['cargo_min'] !== null ? (int) $k['cargo_min'] : null;
+                    if ( $drive_min !== null && $cargo_min === null )      { $labor = $drive_min; }
+                    elseif ( $drive_min !== null && $cargo_min !== null )  { $labor = $drive_min + $cargo_min; }
+                    else                                                   { $labor = 0; }
+                    // 始業・終業から拘束時間を計算（driver-reportと同じロジック）
+                    $kousoku = null;
+                    if ( $start_time !== '' && $end_time !== '' ) {
+                        list( $sh2, $sm2 ) = array_map( 'intval', explode( ':', $start_time ) );
+                        list( $eh2, $em2 ) = array_map( 'intval', explode( ':', $end_time ) );
+                        $st2 = $sh2 * 60 + $sm2; $et2 = $eh2 * 60 + $em2;
+                        if ( $et2 <= $st2 ) {
+                            $end_time = ( $eh2 + 24 ) . ':' . str_pad( $em2, 2, '0', STR_PAD_LEFT );
+                            $et2 += 1440;
+                        }
+                        $kousoku = $et2 - $st2;
+                    }
+                    $r['end_time']       = $end_time;
                     $r['kousoku_min']    = $kousoku;
                     $r['labor_min']      = $labor;
-                    $r['drive_min']      = (int) ( $k['drive_min'] ?? 0 );
-                    $r['cargo_min']      = $k['cargo_min']    !== null ? (int) $k['cargo_min']    : null;
+                    $r['drive_min']      = $drive_min;
+                    $r['cargo_min']      = $cargo_min;
                     $r['midnight_min']   = $k['midnight_min'] !== null ? (int) $k['midnight_min'] : null;
-                    $r['break_calc_min'] = max( 0, $kousoku - $labor );
+                    $r['break_calc_min'] = $kousoku !== null ? max( 0, $kousoku - $labor ) : null;
                     $r['overtime_min']   = $labor > 480 ? $labor - 480 : 0;
                     $r['has_data']       = true;
                 } else {
+                    $r['end_time']    = $end_time;
                     $r['kousoku_min'] = $r['labor_min'] = $r['drive_min'] = $r['cargo_min'] = $r['break_calc_min'] = $r['overtime_min'] = $r['midnight_min'] = null;
                 }
+            }
+            unset( $r );
+
+            // パス2補完：保存データが空の行に自動判定を追加
+            foreach ( $rows as &$r ) {
+                if ( $r['default_kintai'] !== '' ) {
+                    if ( $r['has_data'] && in_array( $r['default_kintai'], [ '法定休', '所定休' ], true ) ) {
+                        $r['default_kintai'] = '出勤';
+                    }
+                    continue;
+                }
+                if ( $r['has_data'] )          { $r['default_kintai'] = '出勤';   continue; }
+                if ( $r['is_sun'] )            { $r['default_kintai'] = '法定休'; continue; }
+                if ( $r['is_shitei_holiday'] ) { $r['default_kintai'] = '所定休'; }
             }
             unset( $r );
 
@@ -180,19 +222,39 @@ class AM_Compute_Jiba {
             $rows = AM_Compute_Chokyo::apply_auto_kintai( $rows );
         }
 
-        // ---- パス3：休日勤務フラグ ----
-        $furikae_covered = [];
-        foreach ( $rows as $r ) {
-            if ( $r['default_kintai'] === '法定振替休' && ! empty( $r['furikae_label'] ) ) $furikae_covered[] = $r['furikae_label'];
-        }
+        // ---- パス3：法定休出勤・所定休出勤フラグ判定 ----
+        $houtei_kinmu_count = 0;
+        $shitei_kinmu_count = 0;
+        $houtei_furi_count  = 0;
+        $shitei_furi_count  = 0;
+
         foreach ( $rows as &$r ) {
-            $r['kyuujitsu_kinmu'] = false;
-            if ( $r['is_sun'] && $r['default_kintai'] === '出勤' ) {
-                $expected = date( 'm/d', strtotime( $r['date'] ) ) . '(日)の振替';
-                if ( ! in_array( $expected, $furikae_covered, true ) ) $r['kyuujitsu_kinmu'] = true;
+            $r['houtei_kinmu'] = false;
+            $r['shitei_kinmu'] = false;
+            if ( $r['has_data'] && $r['default_kintai'] === '出勤' ) {
+                if ( $r['is_sun'] ) {
+                    $r['houtei_kinmu'] = true;
+                    $houtei_kinmu_count++;
+                } elseif ( $r['is_shitei_holiday'] ) {
+                    $r['shitei_kinmu'] = true;
+                    $shitei_kinmu_count++;
+                }
             }
+            if ( $r['default_kintai'] === '法定振替休' ) $houtei_furi_count++;
+            if ( $r['default_kintai'] === '所定振替休' ) $shitei_furi_count++;
         }
         unset( $r );
+
+        if ( ! empty( $rows ) ) {
+            $pair_alerts = $rows[0]['_alerts'] ?? [];
+            if ( $houtei_kinmu_count !== $houtei_furi_count ) {
+                $pair_alerts[] = [ 'type' => 'warn', 'message' => sprintf( '法定休出勤（%d回）と法定振替休（%d日）の数が一致していません。', $houtei_kinmu_count, $houtei_furi_count ) ];
+            }
+            if ( $shitei_kinmu_count !== $shitei_furi_count ) {
+                $pair_alerts[] = [ 'type' => 'warn', 'message' => sprintf( '所定休出勤（%d回）と所定振替休（%d日）の数が一致していません。', $shitei_kinmu_count, $shitei_furi_count ) ];
+            }
+            $rows[0]['_alerts'] = $pair_alerts;
+        }
 
         return $rows;
     }
@@ -227,7 +289,7 @@ class AM_Compute_Jiba {
             $kt = $r['default_kintai'] ?? '';
             if ( in_array( $kt, [ '出勤', '緊急出動' ], true ) ) $attendance++;
             if ( $kt === '欠勤' ) $absent++;
-            if ( $r['kyuujitsu_kinmu'] ?? false ) $holiday_work++;
+            if ( ( $r['houtei_kinmu'] ?? false ) || ( $r['shitei_kinmu'] ?? false ) ) $holiday_work++;
             $hayatai_min += (int) ( $r['hayatai_min'] ?? 0 );
         }
         $paidleave = AM_DB::get_paidleave_summary( $employee_code, $year_month );

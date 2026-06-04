@@ -146,7 +146,12 @@ $page_url = admin_url( 'admin.php?page=attendance-manager-jiba' );
                                     <?php echo esc_html( substr( $row['date'], 5 ) ); ?>
                                     <span class="am-dow"><?php echo esc_html( $row['dow'] ); ?></span>
                                 </span>
-                                <?php if ( ! empty( $row['kyuujitsu_kinmu'] ) ) : ?><span class="am-badge-kyukin">休日出勤</span><?php endif; ?>
+                                <?php if ( ! empty( $row['houtei_kinmu'] ) ) : ?>
+                                    <span class="am-badge-houtei-kinmu">法定休出勤</span>
+                                <?php endif; ?>
+                                <?php if ( ! empty( $row['shitei_kinmu'] ) ) : ?>
+                                    <span class="am-badge-shitei-kinmu">所定休出勤</span>
+                                <?php endif; ?>
                             </td>
                             <td class="col-kintai">
                                 <select class="am-kintai-select">
