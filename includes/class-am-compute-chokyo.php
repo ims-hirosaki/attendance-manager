@@ -226,9 +226,17 @@ class AM_Compute_Chokyo {
             unset( $r );
 
             // パス2補完：保存データの自動補正
-            // ① データがあるのに法定休・所定休になっている行 → 出勤に上書き
-            // ② kintai_type が空の行 → データ・曜日・所定休日から自動判定
+            // ① データなしなのに出勤になっている行 → 曜日・休日で再判定
+            // ② データがあるのに法定休・所定休になっている行 → 出勤に補正
+            // ③ kintai_type が空の行 → データ・曜日・所定休日から自動判定
             foreach ( $rows as &$r ) {
+                if ( $r['default_kintai'] === '出勤' && ! $r['has_data'] ) {
+                    // データがないのに出勤は矛盾 → 曜日・休日で再判定
+                    if ( $r['is_sun'] )                { $r['default_kintai'] = '法定休'; }
+                    elseif ( $r['is_shitei_holiday'] ) { $r['default_kintai'] = '所定休'; }
+                    else                               { $r['default_kintai'] = ''; }
+                    continue;
+                }
                 if ( $r['default_kintai'] !== '' ) {
                     // データがあるのに法定休・所定休は矛盾 → 出勤に補正
                     if ( $r['has_data'] && in_array( $r['default_kintai'], [ '法定休', '所定休' ], true ) ) {
