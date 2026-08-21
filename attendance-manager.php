@@ -164,6 +164,7 @@ class Tanpopo_AttendanceManager {
      * マイグレーション
      * ------------------------------------------------------------- */
     public function migrate_existing_tables() {
+        if ( ! current_user_can( 'manage_custom_plugin_settings' ) ) return;
         global $wpdb;
         $tables = [
             $wpdb->prefix . 'am_chokyo_carryover',
@@ -196,7 +197,7 @@ class Tanpopo_AttendanceManager {
         add_menu_page(
             '勤怠管理',
             '勤怠管理',
-            'manage_options',
+            'access_custom_plugins',
             'attendance-manager',
             [ $this, 'render_chokyo_page' ],
             'dashicons-calendar-alt',
@@ -204,22 +205,22 @@ class Tanpopo_AttendanceManager {
         );
         add_submenu_page(
             'attendance-manager', '長距離', '長距離',
-            'manage_options', 'attendance-manager',
+            'access_custom_plugins', 'attendance-manager',
             [ $this, 'render_chokyo_page' ]
         );
         add_submenu_page(
             'attendance-manager', '地場・事務', '地場・事務',
-            'manage_options', 'attendance-manager-jiba',
+            'access_custom_plugins', 'attendance-manager-jiba',
             [ $this, 'render_jiba_page' ]
         );
         add_submenu_page(
             'attendance-manager', '集計一覧', '集計一覧',
-            'manage_options', 'attendance-manager-summary',
+            'access_custom_plugins', 'attendance-manager-summary',
             [ $this, 'render_summary_list_page' ]
         );
         add_submenu_page(
             'attendance-manager', '設定', '設定',
-            'manage_options', 'attendance-manager-settings',
+            'manage_custom_plugin_settings', 'attendance-manager-settings',
             [ $this, 'render_settings_page' ]
         );
     }
@@ -246,6 +247,7 @@ class Tanpopo_AttendanceManager {
      * 長距離 集計表示
      * ------------------------------------------------------------- */
     public function render_chokyo_page() {
+        if ( ! current_user_can( 'access_custom_plugins' ) ) wp_die( esc_html__( '権限がありません。', 'attendance-manager' ), '', array( 'response' => 403 ) );
         $result    = AM_DB::get_employees_by_category( 'chokyo' );
         $employees = $result['employees'];
         $db_error  = $result['error'];
@@ -273,6 +275,7 @@ class Tanpopo_AttendanceManager {
      * 地場・事務 集計表示
      * ------------------------------------------------------------- */
     public function render_jiba_page() {
+        if ( ! current_user_can( 'access_custom_plugins' ) ) wp_die( esc_html__( '権限がありません。', 'attendance-manager' ), '', array( 'response' => 403 ) );
         $result    = AM_DB::get_employees_by_category( 'jiba' );
         $employees = $result['employees'];
         $db_error  = $result['error'];
@@ -300,6 +303,7 @@ class Tanpopo_AttendanceManager {
      * 集計一覧
      * ------------------------------------------------------------- */
     public function render_summary_list_page() {
+        if ( ! current_user_can( 'access_custom_plugins' ) ) wp_die( esc_html__( '権限がありません。', 'attendance-manager' ), '', array( 'response' => 403 ) );
         $selected_month = isset( $_GET['am_month'] ) ? sanitize_text_field( wp_unslash( $_GET['am_month'] ) ) : date( 'Y-m' );
         include AM_PLUGIN_DIR . 'templates/summary-list-page.php';
     }
@@ -308,6 +312,7 @@ class Tanpopo_AttendanceManager {
      * 設定画面（休日マスタ + 種別管理）
      * ------------------------------------------------------------- */
     public function render_settings_page() {
+        if ( ! current_user_can( 'manage_custom_plugin_settings' ) ) wp_die( esc_html__( '権限がありません。', 'attendance-manager' ), '', array( 'response' => 403 ) );
         global $wpdb;
 
         // 休日マスタ用データ
