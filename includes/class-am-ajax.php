@@ -12,7 +12,7 @@ class AM_Ajax {
 
     public static function chokyo_kintai_save() {
         check_ajax_referer( 'am_nonce', 'nonce' );
-        if ( ! current_user_can( 'manage_options' ) ) wp_die( -1 );
+        if ( ! current_user_can( 'edit_custom_plugins' ) ) wp_die( -1 );
 
         global $wpdb;
         $table     = $wpdb->prefix . 'am_chokyo_kintai_log';
@@ -51,7 +51,7 @@ class AM_Ajax {
 
     public static function chokyo_get_monthly_summary() {
         check_ajax_referer( 'am_nonce', 'nonce' );
-        if ( ! current_user_can( 'manage_options' ) ) wp_die( -1 );
+        if ( ! current_user_can( 'access_custom_plugins' ) ) wp_die( -1 );
 
         $crew_code  = sanitize_text_field( wp_unslash( $_POST['crew_code']  ?? '' ) );
         $year_month = sanitize_text_field( wp_unslash( $_POST['year_month'] ?? '' ) );
@@ -71,7 +71,7 @@ class AM_Ajax {
 
     public static function chokyo_get_daily_rows() {
         check_ajax_referer( 'am_nonce', 'nonce' );
-        if ( ! current_user_can( 'manage_options' ) ) wp_die( -1 );
+        if ( ! current_user_can( 'access_custom_plugins' ) ) wp_die( -1 );
 
         $crew_code  = sanitize_text_field( wp_unslash( $_POST['crew_code']  ?? '' ) );
         $year_month = sanitize_text_field( wp_unslash( $_POST['year_month'] ?? '' ) );
@@ -103,7 +103,7 @@ class AM_Ajax {
 
     public static function chokyo_get_weekly_rows() {
         check_ajax_referer( 'am_nonce', 'nonce' );
-        if ( ! current_user_can( 'manage_options' ) ) wp_die( -1 );
+        if ( ! current_user_can( 'access_custom_plugins' ) ) wp_die( -1 );
 
         $crew_code  = sanitize_text_field( wp_unslash( $_POST['crew_code']  ?? '' ) );
         $year_month = sanitize_text_field( wp_unslash( $_POST['year_month'] ?? '' ) );
@@ -121,7 +121,7 @@ class AM_Ajax {
 
     public static function jiba_kintai_save() {
         check_ajax_referer( 'am_nonce', 'nonce' );
-        if ( ! current_user_can( 'manage_options' ) ) wp_die( -1 );
+        if ( ! current_user_can( 'edit_custom_plugins' ) ) wp_die( -1 );
 
         global $wpdb;
         $table         = $wpdb->prefix . 'am_jiba_kintai_log';
@@ -160,7 +160,7 @@ class AM_Ajax {
 
     public static function jiba_get_monthly_summary() {
         check_ajax_referer( 'am_nonce', 'nonce' );
-        if ( ! current_user_can( 'manage_options' ) ) wp_die( -1 );
+        if ( ! current_user_can( 'access_custom_plugins' ) ) wp_die( -1 );
 
         $employee_code = sanitize_text_field( wp_unslash( $_POST['employee_code'] ?? '' ) );
         $year_month    = sanitize_text_field( wp_unslash( $_POST['year_month']    ?? '' ) );
@@ -180,7 +180,7 @@ class AM_Ajax {
 
     public static function jiba_get_daily_rows() {
         check_ajax_referer( 'am_nonce', 'nonce' );
-        if ( ! current_user_can( 'manage_options' ) ) wp_die( -1 );
+        if ( ! current_user_can( 'access_custom_plugins' ) ) wp_die( -1 );
 
         $employee_code = sanitize_text_field( wp_unslash( $_POST['employee_code'] ?? '' ) );
         $year_month    = sanitize_text_field( wp_unslash( $_POST['year_month']    ?? '' ) );
@@ -208,7 +208,7 @@ class AM_Ajax {
 
     public static function jiba_get_weekly_rows() {
         check_ajax_referer( 'am_nonce', 'nonce' );
-        if ( ! current_user_can( 'manage_options' ) ) wp_die( -1 );
+        if ( ! current_user_can( 'access_custom_plugins' ) ) wp_die( -1 );
 
         $employee_code = sanitize_text_field( wp_unslash( $_POST['employee_code'] ?? '' ) );
         $year_month    = sanitize_text_field( wp_unslash( $_POST['year_month']    ?? '' ) );
@@ -265,13 +265,13 @@ class AM_Ajax {
 
     public static function holiday_get_rules() {
         check_ajax_referer( 'am_nonce', 'nonce' );
-        if ( ! current_user_can( 'manage_options' ) ) wp_die( -1 );
+        if ( ! current_user_can( 'manage_custom_plugin_settings' ) ) wp_die( -1 );
         wp_send_json_success( AM_DB::get_holiday_rules() );
     }
 
     public static function holiday_save_rule() {
         check_ajax_referer( 'am_nonce', 'nonce' );
-        if ( ! current_user_can( 'manage_options' ) ) wp_die( -1 );
+        if ( ! current_user_can( 'manage_custom_plugin_settings' ) ) wp_die( -1 );
 
         global $wpdb;
         $table        = $wpdb->prefix . 'am_holiday_rules';
@@ -292,7 +292,7 @@ class AM_Ajax {
 
     public static function holiday_delete_rule() {
         check_ajax_referer( 'am_nonce', 'nonce' );
-        if ( ! current_user_can( 'manage_options' ) ) wp_die( -1 );
+        if ( ! current_user_can( 'manage_custom_plugin_settings' ) ) wp_die( -1 );
         global $wpdb;
         $wpdb->delete( $wpdb->prefix . 'am_holiday_rules', [ 'id' => (int) ( $_POST['id'] ?? 0 ) ] );
         wp_send_json_success();
@@ -300,7 +300,7 @@ class AM_Ajax {
 
     public static function holiday_toggle_rule() {
         check_ajax_referer( 'am_nonce', 'nonce' );
-        if ( ! current_user_can( 'manage_options' ) ) wp_die( -1 );
+        if ( ! current_user_can( 'manage_custom_plugin_settings' ) ) wp_die( -1 );
         global $wpdb;
         $wpdb->update( $wpdb->prefix . 'am_holiday_rules',
             [ 'is_active' => (int) ( $_POST['is_active'] ?? 0 ) ],
@@ -315,7 +315,7 @@ class AM_Ajax {
 
     public static function summary_list_get() {
         check_ajax_referer( 'am_nonce', 'nonce' );
-        if ( ! current_user_can( 'manage_options' ) ) wp_die( -1 );
+        if ( ! current_user_can( 'access_custom_plugins' ) ) wp_die( -1 );
 
         $year_month = sanitize_text_field( wp_unslash( $_POST['year_month'] ?? '' ) );
         if ( ! $year_month ) wp_send_json_error( [ 'message' => 'パラメータが不正です' ] );
@@ -392,7 +392,7 @@ class AM_Ajax {
      */
     public static function jobtype_get() {
         check_ajax_referer( 'am_nonce', 'nonce' );
-        if ( ! current_user_can( 'manage_options' ) ) wp_die( -1 );
+        if ( ! current_user_can( 'manage_custom_plugin_settings' ) ) wp_die( -1 );
 
         $job_types = function_exists( 'emp_get_job_types' ) ? emp_get_job_types() : [];
         $mappings  = AM_DB::get_job_type_mappings();
@@ -414,7 +414,7 @@ class AM_Ajax {
      */
     public static function jobtype_save() {
         check_ajax_referer( 'am_nonce', 'nonce' );
-        if ( ! current_user_can( 'manage_options' ) ) wp_die( -1 );
+        if ( ! current_user_can( 'manage_custom_plugin_settings' ) ) wp_die( -1 );
 
         $job_type_name = sanitize_text_field( wp_unslash( $_POST['job_type_name'] ?? '' ) );
         $category      = sanitize_text_field( wp_unslash( $_POST['category']      ?? '' ) );
