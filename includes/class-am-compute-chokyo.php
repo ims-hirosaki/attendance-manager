@@ -154,9 +154,18 @@ class AM_Compute_Chokyo {
                     $labor_min = 0;
                 }
 
-                $midnight_min   = $k['midnight_min'] !== null ? (int) $k['midnight_min'] : null;
+                // 会社の手当計算ルールに合わせ、時間外深夜は深夜・残業の双方へ算入する。
+                $regular_midnight_min  = isset( $k['midnight_min'] ) ? (int) $k['midnight_min'] : null;
+                $overtime_source_min   = isset( $k['overtime_min'] ) ? (int) $k['overtime_min'] : null;
+                $overtime_midnight_min = isset( $k['overtime_midnight_min'] ) ? (int) $k['overtime_midnight_min'] : null;
+
+                $midnight_min = ( $regular_midnight_min !== null || $overtime_midnight_min !== null )
+                    ? (int) ( $regular_midnight_min ?? 0 ) + (int) ( $overtime_midnight_min ?? 0 )
+                    : null;
                 $break_calc_min = $kousoku_min !== null ? max( 0, $kousoku_min - $labor_min ) : null;
-                $overtime_min   = $labor_min > 480 ? $labor_min - 480 : 0;
+                $overtime_min = ( $overtime_source_min !== null || $overtime_midnight_min !== null )
+                    ? (int) ( $overtime_source_min ?? 0 ) + (int) ( $overtime_midnight_min ?? 0 )
+                    : max( 0, $labor_min - 480 );
             }
 
             $is_shitei = self::is_shitei_holiday( $date_str, $dow_num, $shitei_rules );

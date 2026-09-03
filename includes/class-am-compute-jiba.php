@@ -217,9 +217,18 @@ class AM_Compute_Jiba {
                 $r['labor_min']      = $labor;
                 $r['drive_min']      = $drive_min;
                 $r['cargo_min']      = $cargo_min;
-                $r['midnight_min']   = $k['midnight_min'] !== null ? (int) $k['midnight_min'] : null;
+                // 会社の手当計算ルールに合わせ、時間外深夜は深夜・残業の双方へ算入する。
+                $regular_midnight_min  = isset( $k['midnight_min'] ) ? (int) $k['midnight_min'] : null;
+                $overtime_source_min   = isset( $k['overtime_min'] ) ? (int) $k['overtime_min'] : null;
+                $overtime_midnight_min = isset( $k['overtime_midnight_min'] ) ? (int) $k['overtime_midnight_min'] : null;
+
+                $r['midnight_min'] = ( $regular_midnight_min !== null || $overtime_midnight_min !== null )
+                    ? (int) ( $regular_midnight_min ?? 0 ) + (int) ( $overtime_midnight_min ?? 0 )
+                    : null;
                 $r['break_calc_min'] = $kousoku !== null ? max( 0, $kousoku - $labor ) : null;
-                $r['overtime_min']   = $labor > 480 ? $labor - 480 : 0;
+                $r['overtime_min'] = ( $overtime_source_min !== null || $overtime_midnight_min !== null )
+                    ? (int) ( $overtime_source_min ?? 0 ) + (int) ( $overtime_midnight_min ?? 0 )
+                    : max( 0, $labor - 480 );
                 $r['has_data']       = true;
             } else {
                 $r['end_time']    = $end_time;
