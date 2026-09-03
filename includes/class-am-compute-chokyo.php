@@ -638,7 +638,8 @@ class AM_Compute_Chokyo {
                 'break_min'          => $net_kousoku - $net_labor,
                 'midnight_min'       => $net_midnight,
                 'day_overtime_min'   => $sum['overtime_min'],
-                'week_overtime_min'  => $is_carryover ? null : $week_overtime,
+                // 月間合計では月末時点の値を使う。画面の週行は従来どおり繰越バッジを表示する。
+                'week_overtime_min'  => $week_overtime,
                 'confirmed_overtime' => $is_carryover ? null : $confirmed_overtime,
                 'carry_days'         => $is_carryover ? $prev_days : 0,
             ];
@@ -649,8 +650,8 @@ class AM_Compute_Chokyo {
 
         // 月間合計
         // 前月繰越行は当月実績ではないため除外する。
-        // 月末の残業繰越行は通常時間を当月実績に含める一方、
-        // 日残業・週残業・確定残業は翌月に確定するため合計しない。
+        // 月末の残業繰越行も当月1日〜末日の実績として通常時間・日残業・週残業に含める。
+        // 確定残業だけは翌月に週が確定してから合計する。
         $total = array_fill_keys(
             [ 'kousoku_min','labor_min','drive_min','cargo_min','midnight_min',
               'day_overtime_min','week_overtime_min','confirmed_overtime','days' ], 0
@@ -663,11 +664,11 @@ class AM_Compute_Chokyo {
             $total['cargo_min']          += $w['cargo_min'];
             $total['midnight_min']       += $w['midnight_min'];
             $total['days']               += $w['days'];
+            $total['day_overtime_min']   += $w['day_overtime_min'];
+            $total['week_overtime_min']  += $w['week_overtime_min'] ?? 0;
 
             if ( $w['is_carryover'] ) continue;
 
-            $total['day_overtime_min']   += $w['day_overtime_min'];
-            $total['week_overtime_min']  += $w['week_overtime_min']  ?? 0;
             $total['confirmed_overtime'] += $w['confirmed_overtime'] ?? 0;
         }
         $total['break_min'] = $total['kousoku_min'] - $total['labor_min'];

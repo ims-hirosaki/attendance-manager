@@ -58,8 +58,8 @@
                 <td class="wcol-min"><?php echo esc_html( Tanpopo_AttendanceManager::format_min( $weekly['total']['cargo_min'] ) ); ?></td>
                 <td class="wcol-min"><?php echo esc_html( Tanpopo_AttendanceManager::format_min( $weekly['total']['break_min'] ) ); ?></td>
                 <td class="wcol-min"><?php echo esc_html( Tanpopo_AttendanceManager::format_min( $weekly['total']['midnight_min'] ) ); ?></td>
-                <td class="wcol-min <?php echo ( (int)$weekly['total']['day_overtime_min'] > 0 ) ? 'am-cell-over' : ''; ?>"><?php echo esc_html( Tanpopo_AttendanceManager::format_min( $weekly['total']['day_overtime_min'] ) ); ?></td>
-                <td class="wcol-min <?php echo ( (int)$weekly['total']['week_overtime_min'] > 0 ) ? 'am-cell-over' : ''; ?>"><?php echo esc_html( Tanpopo_AttendanceManager::format_min( $weekly['total']['week_overtime_min'] ) ); ?></td>
+                <td class="wcol-min <?php echo ( (int)$weekly['total']['day_overtime_min'] > 0 ) ? 'am-cell-over' : ''; ?>" title="1日～末日合計"><?php echo esc_html( Tanpopo_AttendanceManager::format_min( $weekly['total']['day_overtime_min'] ) ); ?></td>
+                <td class="wcol-min <?php echo ( (int)$weekly['total']['week_overtime_min'] > 0 ) ? 'am-cell-over' : ''; ?>" title="1日～末日合計"><?php echo esc_html( Tanpopo_AttendanceManager::format_min( $weekly['total']['week_overtime_min'] ) ); ?></td>
                 <td class="wcol-min <?php echo ( (int)$weekly['total']['confirmed_overtime'] > 0 ) ? 'am-cell-over' : ''; ?> am-cell-confirmed"><?php echo esc_html( Tanpopo_AttendanceManager::format_min( $weekly['total']['confirmed_overtime'] ) ); ?></td>
             </tr>
         </tfoot>
