@@ -1,21 +1,18 @@
-name: Deploy to XSERVER
-
 on:
   push:
     branches:
       - main
 
 jobs:
-  deploy:
+  deploy-production:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-
-      - name: FTP Deploy
+      - name: FTP Deploy to Production
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
         with:
           server: ${{ secrets.FTP_HOST_TANPOPO }}
           username: ${{ secrets.FTP_USER_TANPOPO }}
           password: ${{ secrets.FTP_PASS_TANPOPO }}
-          local-dir: ./
           server-dir: /xs969605.xsrv.jp/public_html/inhouse/wp-content/plugins/attendance-manager/
+          dangerous-clean-slate: false
