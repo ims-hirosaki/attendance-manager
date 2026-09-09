@@ -987,3 +987,86 @@ tr[data-auto="false"] .am-kintai-select {
     from { transform: rotate(0deg); }
     to   { transform: rotate(360deg); }
 }
+
+/* ===============================================================
+   拘束時間CSV取込
+   ============================================================= */
+.am-import-card {
+    max-width: 820px;
+}
+
+.am-import-file-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.am-import-file-row input[type="file"] {
+    min-width: 340px;
+}
+
+.am-import-help {
+    color: #666;
+    font-size: 12px;
+}
+
+.am-import-mode {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    padding: 12px 14px;
+    margin-bottom: 12px;
+    border-left: 4px solid #2c5f2e;
+    background: #f0f8f0;
+    color: #28452a;
+}
+
+.am-import-overwrite {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 14px;
+    border: 1px solid #e3c3c3;
+    border-radius: 5px;
+    background: #fff7f7;
+    color: #6e2424;
+    cursor: pointer;
+}
+
+.am-import-overwrite input {
+    margin-top: 3px;
+}
+
+.am-import-overwrite span,
+.am-import-overwrite small {
+    display: block;
+}
+
+.am-import-overwrite small {
+    margin-top: 4px;
+    color: #775656;
+}
+
+.am-import-actions {
+    margin-top: 20px;
+}
+
+.am-import-notes {
+    max-width: 820px;
+    margin-top: 20px;
+}
+
+.am-import-notes ul {
+    margin: 0 0 0 20px;
+    list-style: disc;
+}
+
+.am-import-notes li + li {
+    margin-top: 6px;
+}
+
+.am-import-notice {
+    max-width: 790px;
+}

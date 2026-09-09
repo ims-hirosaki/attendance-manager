@@ -514,4 +514,21 @@
         $(document).on('click', '#am-sl-load', slLoad);
     }
 
+    /* ================================================================
+       拘束時間CSV取込ページ
+       ================================================================ */
+    if (currentPage === 'attendance-manager-kousoku-import') {
+        $('#am-kousoku-import-form').on('submit', function (event) {
+            var overwrite = $('#am-overwrite-existing').is(':checked');
+            if (overwrite && !window.confirm('既存行をCSVの値で上書きします。実行してよろしいですか？')) {
+                event.preventDefault();
+                return;
+            }
+
+            $('#am-kousoku-import-submit')
+                .prop('disabled', true)
+                .text('取込処理中...');
+        });
+    }
+
 })(jQuery);

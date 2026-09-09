@@ -2,13 +2,13 @@
 /**
  * Plugin Name: 勤怠管理
  * Description: 長距離ドライバー・事務・地場の勤怠データを管理するプラグイン
- * Version:     1.1.1
+ * Version:     1.2.0
  * Author:      有限会社たんぽぽ運送
  */
 
 if ( ! defined( 'ABSPATH' ) ) exit;
 
-if ( ! defined( 'AM_VERSION' ) )    define( 'AM_VERSION',    '1.1.1' );
+if ( ! defined( 'AM_VERSION' ) )    define( 'AM_VERSION',    '1.2.0' );
 if ( ! defined( 'AM_PLUGIN_DIR' ) ) define( 'AM_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 if ( ! defined( 'AM_PLUGIN_URL' ) ) define( 'AM_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 
@@ -16,6 +16,7 @@ require_once AM_PLUGIN_DIR . 'includes/class-am-db.php';
 require_once AM_PLUGIN_DIR . 'includes/class-am-compute-chokyo.php';
 require_once AM_PLUGIN_DIR . 'includes/class-am-compute-jiba.php';
 require_once AM_PLUGIN_DIR . 'includes/class-am-ajax.php';
+require_once AM_PLUGIN_DIR . 'includes/class-am-kousoku-csv-importer.php';
 
 if ( ! class_exists( 'Tanpopo_AttendanceManager' ) ) :
 
@@ -53,6 +54,9 @@ class Tanpopo_AttendanceManager {
 
         // --- 集計一覧 AJAX ---
         add_action( 'wp_ajax_am_summary_list_get',           [ 'AM_Ajax', 'summary_list_get' ] );
+
+        // --- 拘束時間CSV取込 ---
+        add_action( 'admin_post_am_kousoku_csv_import',      [ 'AM_Kousoku_CSV_Importer', 'handle_import' ] );
     }
 
     public static function format_min( $min ) {
@@ -219,6 +223,11 @@ class Tanpopo_AttendanceManager {
             [ $this, 'render_summary_list_page' ]
         );
         add_submenu_page(
+            'attendance-manager', '拘束時間CSV取込', '拘束CSV取込',
+            'manage_custom_plugin_settings', 'attendance-manager-kousoku-import',
+            [ $this, 'render_kousoku_import_page' ]
+        );
+        add_submenu_page(
             'attendance-manager', '設定', '設定',
             'manage_custom_plugin_settings', 'attendance-manager-settings',
             [ $this, 'render_settings_page' ]
@@ -230,7 +239,7 @@ class Tanpopo_AttendanceManager {
      * ------------------------------------------------------------- */
     public function enqueue_assets() {
         $page  = isset( $_GET['page'] ) ? sanitize_text_field( $_GET['page'] ) : '';
-        $pages = [ 'attendance-manager', 'attendance-manager-jiba', 'attendance-manager-summary', 'attendance-manager-settings' ];
+        $pages = [ 'attendance-manager', 'attendance-manager-jiba', 'attendance-manager-summary', 'attendance-manager-kousoku-import', 'attendance-manager-settings' ];
         if ( ! in_array( $page, $pages, true ) ) return;
 
         wp_enqueue_style(  'am-admin', AM_PLUGIN_URL . 'assets/css/admin.css', [], AM_VERSION );
@@ -306,6 +315,15 @@ class Tanpopo_AttendanceManager {
         if ( ! current_user_can( 'access_custom_plugins' ) ) wp_die( esc_html__( '権限がありません。', 'attendance-manager' ), '', array( 'response' => 403 ) );
         $selected_month = isset( $_GET['am_month'] ) ? sanitize_text_field( wp_unslash( $_GET['am_month'] ) ) : date( 'Y-m' );
         include AM_PLUGIN_DIR . 'templates/summary-list-page.php';
+    }
+
+    /* ---------------------------------------------------------------
+     * 拘束時間CSV取込
+     * ------------------------------------------------------------- */
+    public function render_kousoku_import_page() {
+        if ( ! current_user_can( 'manage_custom_plugin_settings' ) ) wp_die( esc_html__( '権限がありません。', 'attendance-manager' ), '', [ 'response' => 403 ] );
+        $import_result = AM_Kousoku_CSV_Importer::consume_result();
+        include AM_PLUGIN_DIR . 'templates/kousoku-import-page.php';
     }
 
     /* ---------------------------------------------------------------
