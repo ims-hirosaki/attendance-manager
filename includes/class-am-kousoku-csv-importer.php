@@ -22,6 +22,43 @@ class AM_Kousoku_CSV_Importer {
         'overtime_midnight_min', 'remarks1', 'remarks2', 'created_at', 'updated_at',
     ];
 
+    const INPUT_COLUMNS = [
+        'crew_code', 'work_date', 'start_time', 'end_time', 'end_next_day',
+        'drive_min', 'drive_overlap_min', 'cargo_min', 'cargo_overlap_min',
+        'break_min', 'break_overlap_min', 'kousoku_subtotal_min',
+        'kousoku_overlap_min', 'kousoku_total_min', 'kousoku_cumul_min',
+        'drive_avg_before_min', 'drive_avg_after_min', 'rest_min',
+        'actual_work_min', 'overtime_min', 'midnight_min',
+        'overtime_midnight_min', 'remarks1', 'remarks2',
+    ];
+
+    const JAPANESE_HEADERS = [
+        '乗務員コード'             => 'crew_code',
+        '日付'                     => 'work_date',
+        '始業時刻'                 => 'start_time',
+        '終業時刻'                 => 'end_time',
+        '終業翌日フラグ'           => 'end_next_day',
+        '運転時間（分）'           => 'drive_min',
+        '重複運転時間（分）'       => 'drive_overlap_min',
+        '荷役時間（分）'           => 'cargo_min',
+        '重複荷役時間（分）'       => 'cargo_overlap_min',
+        '休憩時間（分）'           => 'break_min',
+        '重複休憩時間（分）'       => 'break_overlap_min',
+        '拘束時間小計（分）'       => 'kousoku_subtotal_min',
+        '重複拘束時間小計（分）'   => 'kousoku_overlap_min',
+        '拘束時間合計（分）'       => 'kousoku_total_min',
+        '拘束時間累計（分）'       => 'kousoku_cumul_min',
+        '前運転平均（分）'         => 'drive_avg_before_min',
+        '後運転平均（分）'         => 'drive_avg_after_min',
+        '休息時間（分）'           => 'rest_min',
+        '実働時間（分）'           => 'actual_work_min',
+        '時間外時間（分）'         => 'overtime_min',
+        '深夜時間（分）'           => 'midnight_min',
+        '時間外深夜時間（分）'     => 'overtime_midnight_min',
+        '摘要1'                    => 'remarks1',
+        '摘要2'                    => 'remarks2',
+    ];
+
     const REQUIRED_INT_COLUMNS = [
         'id', 'end_next_day', 'drive_min', 'kousoku_subtotal_min',
         'kousoku_total_min', 'kousoku_cumul_min', 'drive_avg_after_min',
@@ -75,6 +112,25 @@ class AM_Kousoku_CSV_Importer {
         return false === $result ? null : $result;
     }
 
+    /** 日本語見出しの入力用ひな形をダウンロードする。 */
+    public static function download_template() {
+        if ( ! current_user_can( 'manage_custom_plugin_settings' ) ) {
+            wp_die( esc_html__( '権限がありません。', 'attendance-manager' ), '', [ 'response' => 403 ] );
+        }
+        check_admin_referer( 'am_kousoku_csv_template' );
+
+        nocache_headers();
+        header( 'Content-Type: text/csv; charset=UTF-8' );
+        header( 'Content-Disposition: attachment; filename="kousoku_import_template.csv"' );
+
+        $output = fopen( 'php://output', 'wb' );
+        if ( false === $output ) wp_die( 'ひな形CSVを生成できませんでした。' );
+        fwrite( $output, "\xEF\xBB\xBF" );
+        fputcsv( $output, array_keys( self::JAPANESE_HEADERS ) );
+        fclose( $output );
+        exit;
+    }
+
     private static function result_key() {
         return 'am_kousoku_csv_import_' . get_current_user_id();
     }
@@ -116,7 +172,7 @@ class AM_Kousoku_CSV_Importer {
             if ( null === $header ) throw new RuntimeException( 'CSVファイルが空です。' );
             $header[0] = preg_replace( '/^\xEF\xBB\xBF/', '', (string) $header[0] );
             $header    = array_map( 'trim', $header );
-            self::validate_header( $header );
+            $header    = self::normalize_header( $header );
             self::validate_table_columns( $table );
 
             if ( false === $wpdb->query( 'START TRANSACTION' ) ) {
@@ -167,13 +223,15 @@ class AM_Kousoku_CSV_Importer {
                     continue;
                 }
 
-                $id_owner = $wpdb->get_var( $wpdb->prepare(
-                    "SELECT `id` FROM `{$table}` WHERE `id` = %d LIMIT 1",
-                    $data['id']
-                ) );
-                self::throw_if_db_error( $line );
-                if ( null !== $id_owner ) {
-                    throw new RuntimeException( sprintf( '%d行目: id=%d は別レコードで使用されています。', $line, $data['id'] ) );
+                if ( isset( $data['id'] ) ) {
+                    $id_owner = $wpdb->get_var( $wpdb->prepare(
+                        "SELECT `id` FROM `{$table}` WHERE `id` = %d LIMIT 1",
+                        $data['id']
+                    ) );
+                    self::throw_if_db_error( $line );
+                    if ( null !== $id_owner ) {
+                        throw new RuntimeException( sprintf( '%d行目: id=%d は別レコードで使用されています。', $line, $data['id'] ) );
+                    }
                 }
 
                 if ( false === $wpdb->insert( $table, $data ) ) {
@@ -213,18 +271,29 @@ class AM_Kousoku_CSV_Importer {
         return 1 === count( $row ) && ( null === $row[0] || '' === trim( (string) $row[0] ) );
     }
 
-    private static function validate_header( $header ) {
+    private static function normalize_header( $header ) {
         if ( count( $header ) !== count( array_unique( $header ) ) ) {
             throw new RuntimeException( 'CSVヘッダーに重複したカラムがあります。' );
         }
-        $missing = array_values( array_diff( self::COLUMNS, $header ) );
-        $extra   = array_values( array_diff( $header, self::COLUMNS ) );
-        if ( $missing || $extra ) {
-            $parts = [];
-            if ( $missing ) $parts[] = '不足: ' . implode( ', ', $missing );
-            if ( $extra )   $parts[] = '未対応: ' . implode( ', ', $extra );
-            throw new RuntimeException( 'CSVヘッダーが一致しません（' . implode( ' / ', $parts ) . '）。' );
+
+        $mapped = [];
+        foreach ( $header as $column ) {
+            $mapped[] = isset( self::JAPANESE_HEADERS[ $column ] )
+                ? self::JAPANESE_HEADERS[ $column ]
+                : $column;
         }
+        if ( count( $mapped ) !== count( array_unique( $mapped ) ) ) {
+            throw new RuntimeException( '同じ意味のCSVヘッダーが重複しています。' );
+        }
+
+        $is_input = ! array_diff( self::INPUT_COLUMNS, $mapped )
+            && ! array_diff( $mapped, self::INPUT_COLUMNS );
+        $is_full = ! array_diff( self::COLUMNS, $mapped )
+            && ! array_diff( $mapped, self::COLUMNS );
+        if ( ! $is_input && ! $is_full ) {
+            throw new RuntimeException( 'CSVヘッダーがひな形と一致しません。画面から最新のひな形をダウンロードしてください。' );
+        }
+        return $mapped;
     }
 
     private static function validate_table_columns( $table ) {
@@ -241,16 +310,22 @@ class AM_Kousoku_CSV_Importer {
 
     private static function normalize_row( $raw, $line ) {
         $data = [
-            'id'           => self::integer_value( $raw['id'], 'id', $line, false ),
             'crew_code'    => self::required_text( $raw['crew_code'], 'crew_code', $line, 20 ),
             'work_date'    => self::date_value( $raw['work_date'], 'work_date', $line ),
             'start_time'   => self::time_value( $raw['start_time'], 'start_time', $line ),
             'end_time'     => self::time_value( $raw['end_time'], 'end_time', $line ),
             'remarks1'     => self::nullable_text( $raw['remarks1'], 'remarks1', $line ),
             'remarks2'     => self::nullable_text( $raw['remarks2'], 'remarks2', $line ),
-            'created_at'   => self::datetime_value( $raw['created_at'], 'created_at', $line ),
-            'updated_at'   => self::datetime_value( $raw['updated_at'], 'updated_at', $line ),
         ];
+
+        if ( array_key_exists( 'id', $raw ) ) {
+            $data['id'] = self::integer_value( $raw['id'], 'id', $line, false );
+        }
+        foreach ( [ 'created_at', 'updated_at' ] as $column ) {
+            if ( array_key_exists( $column, $raw ) ) {
+                $data[ $column ] = self::datetime_value( $raw[ $column ], $column, $line );
+            }
+        }
 
         foreach ( self::REQUIRED_INT_COLUMNS as $column ) {
             if ( 'id' === $column ) continue;
@@ -260,7 +335,7 @@ class AM_Kousoku_CSV_Importer {
             $data[ $column ] = self::integer_value( $raw[ $column ], $column, $line, true );
         }
 
-        if ( $data['id'] <= 0 ) {
+        if ( isset( $data['id'] ) && $data['id'] <= 0 ) {
             throw new RuntimeException( sprintf( '%d行目: id は1以上で入力してください。', $line ) );
         }
         if ( ! in_array( $data['end_next_day'], [ 0, 1 ], true ) ) {
@@ -269,7 +344,9 @@ class AM_Kousoku_CSV_Importer {
 
         // CSVの並び順に揃え、予期しないキーがDBへ渡らないようにする。
         $ordered = [];
-        foreach ( self::COLUMNS as $column ) $ordered[ $column ] = $data[ $column ];
+        foreach ( self::COLUMNS as $column ) {
+            if ( array_key_exists( $column, $data ) ) $ordered[ $column ] = $data[ $column ];
+        }
         return $ordered;
     }
 

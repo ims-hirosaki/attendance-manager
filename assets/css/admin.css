@@ -1003,6 +1003,35 @@ tr[data-auto="false"] .am-kintai-select {
     margin-bottom: 20px;
 }
 
+.am-import-template-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    padding-bottom: 18px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #dde3ea;
+}
+
+.am-import-template-row p {
+    margin: 5px 0 0;
+    color: #666;
+    font-size: 12px;
+}
+
+.am-btn-secondary {
+    flex-shrink: 0;
+    background: #fff;
+    color: #2e6da4;
+    border-color: #2e6da4;
+    text-decoration: none;
+}
+
+.am-btn-secondary:hover {
+    background: #eef4fb;
+    color: #1e5080;
+}
+
 .am-import-file-row input[type="file"] {
     min-width: 340px;
 }

@@ -57,6 +57,7 @@ class Tanpopo_AttendanceManager {
 
         // --- 拘束時間CSV取込 ---
         add_action( 'admin_post_am_kousoku_csv_import',      [ 'AM_Kousoku_CSV_Importer', 'handle_import' ] );
+        add_action( 'admin_post_am_kousoku_csv_template',    [ 'AM_Kousoku_CSV_Importer', 'download_template' ] );
     }
 
     public static function format_min( $min ) {
@@ -323,6 +324,10 @@ class Tanpopo_AttendanceManager {
     public function render_kousoku_import_page() {
         if ( ! current_user_can( 'manage_custom_plugin_settings' ) ) wp_die( esc_html__( '権限がありません。', 'attendance-manager' ), '', [ 'response' => 403 ] );
         $import_result = AM_Kousoku_CSV_Importer::consume_result();
+        $template_url  = wp_nonce_url(
+            admin_url( 'admin-post.php?action=am_kousoku_csv_template' ),
+            'am_kousoku_csv_template'
+        );
         include AM_PLUGIN_DIR . 'templates/kousoku-import-page.php';
     }
 
