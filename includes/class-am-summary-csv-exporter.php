@@ -94,6 +94,7 @@ class AM_Summary_CSV_Exporter {
 
     private static function format_minutes( $minutes ) {
         $minutes = max( 0, (int) $minutes );
-        return sprintf( '%02d:%02d', intdiv( $minutes, 60 ), $minutes % 60 );
+        // 分を時間単位の10進数に変換し、小数第2位に四捨五入する。
+        return number_format( $minutes / 60, 2, '.', '' );
     }
 }
