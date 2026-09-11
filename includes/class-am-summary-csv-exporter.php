@@ -30,7 +30,11 @@ class AM_Summary_CSV_Exporter {
         fputcsv( $output, [
             '氏名', '職種', '総労働時間', '確定残業時間', '確定残業が60時間を超えた分の数値',
             '深夜時間', '出勤日数', '法定休日出勤日数', '有給消化日数', '法定休日労働時間', '積卸時間',
-            '所定休日勤務実績_1', '所定休日勤務実績_2', '所定休日勤務実績_3', '所定休日勤務実績_4', '所定休日勤務実績_5',
+            '所定休日勤務実績_1', '所定休日勤務実績_1の労働時間',
+            '所定休日勤務実績_2', '所定休日勤務実績_2の労働時間',
+            '所定休日勤務実績_3', '所定休日勤務実績_3の労働時間',
+            '所定休日勤務実績_4', '所定休日勤務実績_4の労働時間',
+            '所定休日勤務実績_5', '所定休日勤務実績_5の労働時間',
         ] );
 
         self::write_category( $output, 'chokyo', $year_month );
@@ -52,14 +56,17 @@ class AM_Summary_CSV_Exporter {
 
             $houtei_days = 0;
             $houtei_min  = 0;
-            $shitei_dates = [];
+            $shitei_records = [];
             foreach ( $rows as $row ) {
                 if ( ! empty( $row['houtei_kinmu'] ) ) {
                     $houtei_days++;
                     $houtei_min += (int) ( $row['labor_min'] ?? 0 );
                 }
                 if ( ! empty( $row['shitei_kinmu'] ) ) {
-                    $shitei_dates[] = $row['date'] ?? ( $row['work_date'] ?? '' );
+                    $shitei_records[] = [
+                        $row['date'] ?? ( $row['work_date'] ?? '' ),
+                        self::format_minutes( $row['labor_min'] ?? 0 ),
+                    ];
                 }
             }
 
@@ -78,12 +85,15 @@ class AM_Summary_CSV_Exporter {
                 self::format_minutes( $houtei_min ),
                 self::format_minutes( $total['cargo_min'] ?? 0 ),
             ];
-            fputcsv( $output, array_merge( $record, array_pad( array_slice( $shitei_dates, 0, 5 ), 5, '' ) ) );
+            for ( $i = 0; $i < 5; $i++ ) {
+                $record = array_merge( $record, $shitei_records[$i] ?? [ '', '' ] );
+            }
+            fputcsv( $output, $record );
         }
     }
 
     private static function format_minutes( $minutes ) {
         $minutes = max( 0, (int) $minutes );
-        return sprintf( '%d:%02d', intdiv( $minutes, 60 ), $minutes % 60 );
+        return sprintf( '%02d:%02d', intdiv( $minutes, 60 ), $minutes % 60 );
     }
 }
