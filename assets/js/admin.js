@@ -445,6 +445,13 @@
        ================================================================ */
     if (currentPage === 'attendance-manager-summary') {
 
+        var slCsvBaseUrl = $('#am-sl-csv').attr('href');
+        $('#am-sl-month').on('change', function () {
+            var url = new URL(slCsvBaseUrl, window.location.href);
+            url.searchParams.set('year_month', $(this).val());
+            $('#am-sl-csv').attr('href', url.toString());
+        });
+
         var slEscHtml = function (str) {
             return $('<span>').text(str == null ? '' : String(str)).html();
         };

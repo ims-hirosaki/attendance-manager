@@ -2,13 +2,13 @@
 /**
  * Plugin Name: 勤怠管理
  * Description: 長距離ドライバー・事務・地場の勤怠データを管理するプラグイン
- * Version:     1.2.0
+ * Version:     1.2.1
  * Author:      有限会社たんぽぽ運送
  */
 
 if ( ! defined( 'ABSPATH' ) ) exit;
 
-if ( ! defined( 'AM_VERSION' ) )    define( 'AM_VERSION',    '1.2.0' );
+if ( ! defined( 'AM_VERSION' ) )    define( 'AM_VERSION',    '1.2.1' );
 if ( ! defined( 'AM_PLUGIN_DIR' ) ) define( 'AM_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 if ( ! defined( 'AM_PLUGIN_URL' ) ) define( 'AM_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 
@@ -17,6 +17,7 @@ require_once AM_PLUGIN_DIR . 'includes/class-am-compute-chokyo.php';
 require_once AM_PLUGIN_DIR . 'includes/class-am-compute-jiba.php';
 require_once AM_PLUGIN_DIR . 'includes/class-am-ajax.php';
 require_once AM_PLUGIN_DIR . 'includes/class-am-kousoku-csv-importer.php';
+require_once AM_PLUGIN_DIR . 'includes/class-am-summary-csv-exporter.php';
 
 if ( ! class_exists( 'Tanpopo_AttendanceManager' ) ) :
 
@@ -54,6 +55,7 @@ class Tanpopo_AttendanceManager {
 
         // --- 集計一覧 AJAX ---
         add_action( 'wp_ajax_am_summary_list_get',           [ 'AM_Ajax', 'summary_list_get' ] );
+        add_action( 'admin_post_am_summary_csv_export',      [ 'AM_Summary_CSV_Exporter', 'download' ] );
 
         // --- 拘束時間CSV取込 ---
         add_action( 'admin_post_am_kousoku_csv_import',      [ 'AM_Kousoku_CSV_Importer', 'handle_import' ] );

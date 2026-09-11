@@ -25,6 +25,11 @@ $page_url = admin_url( 'admin.php?page=attendance-manager-summary' );
                         <span class="dashicons dashicons-search"></span> 読み込む
                     </button>
                 </div>
+                <div class="am-form-group am-form-group--btn">
+                    <a id="am-sl-csv" class="am-btn am-btn-secondary" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=am_summary_csv_export&year_month=' . rawurlencode( $selected_month ) ), 'am_summary_csv_export' ) ); ?>">
+                        <span class="dashicons dashicons-download"></span> CSV出力
+                    </a>
+                </div>
             </div>
         </div>
     </div>

@@ -16,6 +16,7 @@ class AM_DB {
                 k.crew_code,
                 COALESCE( m.name,          '（未登録）' ) AS name,
                 COALESCE( m.employee_code, '―'          ) AS employee_code,
+                COALESCE( jt.name,         ''           ) AS job_type_name,
                 COALESCE( a.id,            0            ) AS affiliation_id,
                 COALESCE( a.name,          '未所属'     ) AS affiliation_name
             FROM (
@@ -27,6 +28,8 @@ class AM_DB {
                 ON m.crew_code COLLATE utf8mb4_unicode_520_ci = k.crew_code COLLATE utf8mb4_unicode_520_ci
             LEFT JOIN `{$wpdb->prefix}mst_affiliation` a
                 ON a.id = m.affiliation_id
+            LEFT JOIN `{$wpdb->prefix}mst_job_type` jt
+                ON jt.id = m.job_type_id
             ORDER BY CAST( COALESCE( NULLIF( m.employee_code, '―' ), '99999' ) AS UNSIGNED ) ASC
         ", ARRAY_A );
         return [
@@ -44,6 +47,7 @@ class AM_DB {
             SELECT
                 m.employee_code,
                 COALESCE( m.name,  '（未登録）' ) AS name,
+                COALESCE( jt.name, ''           ) AS job_type_name,
                 COALESCE( a.id,    0            ) AS affiliation_id,
                 COALESCE( a.name,  '未所属'     ) AS affiliation_name
             FROM (
@@ -55,6 +59,8 @@ class AM_DB {
                 ON m.employee_code COLLATE utf8mb4_unicode_520_ci = d.employee_code COLLATE utf8mb4_unicode_520_ci
             LEFT JOIN `{$wpdb->prefix}mst_affiliation` a
                 ON a.id = m.affiliation_id
+            LEFT JOIN `{$wpdb->prefix}mst_job_type` jt
+                ON jt.id = m.job_type_id
             ORDER BY CAST( COALESCE( NULLIF( m.employee_code, '' ), '99999' ) AS UNSIGNED ) ASC
         ", ARRAY_A );
         return [
@@ -388,6 +394,7 @@ class AM_DB {
                         m.crew_code,
                         COALESCE( m.name,          '（未登録）' ) AS name,
                         COALESCE( m.employee_code, '―'          ) AS employee_code,
+                        COALESCE( jt.name,         ''           ) AS job_type_name,
                         COALESCE( a.id,            0            ) AS affiliation_id,
                         COALESCE( a.name,          '未所属'     ) AS affiliation_name
                      FROM `{$wpdb->prefix}emp_master` m
@@ -408,6 +415,7 @@ class AM_DB {
                     "SELECT
                         m.employee_code,
                         COALESCE( m.name, '（未登録）' ) AS name,
+                        COALESCE( jt.name, ''           ) AS job_type_name,
                         COALESCE( a.id,   0            ) AS affiliation_id,
                         COALESCE( a.name, '未所属'     ) AS affiliation_name
                      FROM `{$wpdb->prefix}emp_master` m
