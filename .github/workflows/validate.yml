@@ -1,0 +1,24 @@
+name: Validate plugin
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  php-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Reject unresolved merge conflicts
+        run: |
+          if git grep -n -E '^(<<<<<<<|=======|>>>>>>>)'; then
+            echo 'Unresolved merge-conflict markers were found.' >&2
+            exit 1
+          fi
+
+      - name: Check PHP syntax
+        run: find . -name '*.php' -print0 | xargs -0 -n1 php -l
+
+      - name: Check JavaScript syntax
+        run: node --check assets/js/admin.js
