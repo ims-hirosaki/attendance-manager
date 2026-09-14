@@ -54,12 +54,8 @@ class AM_Summary_CSV_Exporter {
             $weekly   = $compute::get_weekly_summary( $code, $year_month, $rows );
             $summary  = ! empty( $rows ) ? $compute::get_monthly_summary( $rows, $weekly, $code, $year_month ) : [];
 
-            $houtei_min  = 0;
             $shitei_records = [];
             foreach ( $rows as $row ) {
-                if ( ! empty( $row['houtei_kinmu'] ) ) {
-                    $houtei_min += (int) ( $row['labor_min'] ?? 0 );
-                }
                 if ( ! empty( $row['shitei_kinmu'] ) ) {
                     $shitei_records[] = [
                         $row['date'] ?? ( $row['work_date'] ?? '' ),
@@ -80,7 +76,7 @@ class AM_Summary_CSV_Exporter {
                 (int) ( $summary['attendance'] ?? 0 ),
                 (int) ( $summary['unmatched_houtei_days'] ?? 0 ),
                 ! empty( $summary['paid_has_data'] ) ? (float) $summary['paid_consumed'] : '',
-                self::format_minutes( $houtei_min ),
+                self::format_minutes( $summary['unmatched_houtei_labor_min'] ?? 0 ),
                 self::format_minutes( $total['cargo_min'] ?? 0 ),
             ];
             for ( $i = 0; $i < 5; $i++ ) {
