@@ -32,11 +32,15 @@ class AM_Summary_CSV_Exporter {
             '深夜時間', '出勤日数', '法定休日出勤日数', '有給消化日数', '法定休日労働時間', '積卸時間',
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
             '所定休日勤務実績_1', '所定休日勤務実績_1の労働時間',
             '所定休日勤務実績_2', '所定休日勤務実績_2の労働時間',
             '所定休日勤務実績_3', '所定休日勤務実績_3の労働時間',
             '所定休日勤務実績_4', '所定休日勤務実績_4の労働時間',
             '所定休日勤務実績_5', '所定休日勤務実績_5の労働時間',
+=======
+            '所定休日勤務実績_1', '所定休日勤務実績_2', '所定休日勤務実績_3', '所定休日勤務実績_4', '所定休日勤務実績_5',
+>>>>>>> theirs
 =======
             '所定休日勤務実績_1', '所定休日勤務実績_2', '所定休日勤務実績_3', '所定休日勤務実績_4', '所定休日勤務実績_5',
 >>>>>>> theirs
@@ -64,6 +68,7 @@ class AM_Summary_CSV_Exporter {
 
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
             $houtei_min  = 0;
             $shitei_records = [];
             foreach ( $rows as $row ) {
@@ -78,6 +83,8 @@ class AM_Summary_CSV_Exporter {
 =======
 =======
 >>>>>>> theirs
+=======
+>>>>>>> theirs
             $houtei_days = 0;
             $houtei_min  = 0;
             $shitei_dates = [];
@@ -89,6 +96,9 @@ class AM_Summary_CSV_Exporter {
                 if ( ! empty( $row['shitei_kinmu'] ) ) {
                     $shitei_dates[] = $row['date'] ?? ( $row['work_date'] ?? '' );
 <<<<<<< ours
+<<<<<<< ours
+>>>>>>> theirs
+=======
 >>>>>>> theirs
 =======
 >>>>>>> theirs
@@ -107,7 +117,11 @@ class AM_Summary_CSV_Exporter {
                 (int) ( $summary['attendance'] ?? 0 ),
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
                 (int) ( $summary['unmatched_houtei_days'] ?? 0 ),
+=======
+                $houtei_days,
+>>>>>>> theirs
 =======
                 $houtei_days,
 >>>>>>> theirs
@@ -120,10 +134,14 @@ class AM_Summary_CSV_Exporter {
             ];
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
             for ( $i = 0; $i < 5; $i++ ) {
                 $record = array_merge( $record, $shitei_records[$i] ?? [ '', '' ] );
             }
             fputcsv( $output, $record );
+=======
+            fputcsv( $output, array_merge( $record, array_pad( array_slice( $shitei_dates, 0, 5 ), 5, '' ) ) );
+>>>>>>> theirs
 =======
             fputcsv( $output, array_merge( $record, array_pad( array_slice( $shitei_dates, 0, 5 ), 5, '' ) ) );
 >>>>>>> theirs
@@ -137,8 +155,12 @@ class AM_Summary_CSV_Exporter {
         $minutes = max( 0, (int) $minutes );
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
         // 分を時間単位の10進数に変換し、小数第2位に四捨五入する。
         return number_format( $minutes / 60, 2, '.', '' );
+=======
+        return sprintf( '%d:%02d', intdiv( $minutes, 60 ), $minutes % 60 );
+>>>>>>> theirs
 =======
         return sprintf( '%d:%02d', intdiv( $minutes, 60 ), $minutes % 60 );
 >>>>>>> theirs
