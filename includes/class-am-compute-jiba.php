@@ -173,7 +173,7 @@ class AM_Compute_Jiba {
                 'has_data' => $has_data, 'default_kintai' => $default_kintai,
                 'furikae_label' => '', 'is_manual' => false,
                 'chokyo' => ! empty( $mat['long_distance'] ),
-                'hayatai_min' => 0, 'note' => '',
+                'hayatai_min' => 0, 'hosei_min' => null, 'note' => '',
                 'start_time' => $start_time, 'end_time' => $end_time,
                 'kousoku_min' => $kousoku_min, 'labor_min' => $labor_min,
                 'drive_min' => null, 'cargo_min' => null,
@@ -195,6 +195,7 @@ class AM_Compute_Jiba {
             // 保存済みの手動ONも維持し、どちらかがONなら長距離として扱う。
             $r['chokyo']      = (bool) $r['chokyo'] || (bool) ( $saved['chokyo'] ?? false );
             $r['hayatai_min'] = (int)  ( $saved['hayatai_min'] ?? 0 );
+            if ( isset( $saved['hosei_min'] ) ) $r['hosei_min'] = (int) $saved['hosei_min'];
             $r['note']        = $saved['note'] ?? '';
 
             if ( $r['is_manual'] ) {
@@ -263,6 +264,9 @@ class AM_Compute_Jiba {
             }
         }
         unset( $r );
+
+        // 補正時間（点呼など）：長距離フラグON日のみ有効（初期値10分、OFFは0）
+        $rows = AM_Compute_Chokyo::apply_hosei( $rows, $year_month, 'chokyo' );
 
         // 承認済み有給の消化日を勤怠種別へ反映（手動設定行は保持）
         foreach ( $rows as &$r ) {

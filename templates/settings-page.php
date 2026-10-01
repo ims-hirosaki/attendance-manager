@@ -127,6 +127,29 @@
     </div>
 
     <div class="am-settings-section-heading" style="margin-top:32px;">
+        <span class="dashicons dashicons-clock"></span>
+        補正時間（点呼など）
+    </div>
+    <p class="am-settings-section-desc">長距離の週集計の労働時間に補正時間を加算する開始月を設定します。この月より前の月は補正時間が0扱いとなり、過去の集計は変わりません。</p>
+    <div class="am-card">
+        <div class="am-card-header"><span class="dashicons dashicons-calendar-alt"></span> 適用開始月</div>
+        <div class="am-card-body">
+            <div class="am-form-row">
+                <div class="am-form-group">
+                    <label class="am-label" for="hosei-start-month">適用開始月</label>
+                    <input type="month" id="hosei-start-month" class="am-input-month" value="<?php echo esc_attr( $hosei_start_month ); ?>">
+                </div>
+                <div class="am-form-group am-form-group--btn">
+                    <button type="button" id="hosei-btn-save" class="am-btn am-btn-primary">
+                        <span class="dashicons dashicons-saved"></span> 保存
+                    </button>
+                </div>
+            </div>
+            <div id="hosei-message" style="margin-top:12px;font-size:13px;"></div>
+        </div>
+    </div>
+
+    <div class="am-settings-section-heading" style="margin-top:32px;">
         <span class="dashicons dashicons-admin-links"></span>
         未紐付け乗組員コード
     </div>

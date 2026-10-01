@@ -471,6 +471,22 @@ tr[data-auto="false"] .am-kintai-select {
     box-shadow: 0 0 0 2px rgba(193, 123, 0, .15);
 }
 
+/* 補正時間 input */
+.am-hosei-input {
+    width: 58px;
+    text-align: center;
+    font-size: 12px;
+    padding: 3px 4px;
+    border: 1px solid #c3cdd8;
+    border-radius: 4px;
+    background: #fff;
+}
+
+.am-hosei-input:disabled {
+    background: #f0f0f1;
+    color: #999;
+}
+
 /* 備考 input */
 .col-note {
     min-width: 120px;

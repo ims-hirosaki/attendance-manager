@@ -125,6 +125,7 @@ $page_url = admin_url( 'admin.php?page=attendance-manager-jiba' );
                             <th class="col-min">深夜時間</th>
                             <th class="col-min">日残業</th>
                             <th class="col-jiba">長距離</th>
+                            <th class="col-min">補正時間<br><small>(点呼など・分)</small></th>
                             <th class="col-min">早退/遅刻</th>
                             <th class="col-note">備考</th>
                         </tr>
@@ -177,6 +178,12 @@ $page_url = admin_url( 'admin.php?page=attendance-manager-jiba' );
                                     <input type="checkbox" class="am-chokyo-input" <?php echo ( $row['chokyo'] ?? false ) ? 'checked' : ''; ?>>
                                     <span class="am-toggle-slider"></span>
                                 </label>
+                            </td>
+                            <td class="col-min">
+                                <input type="number" class="am-hosei-input" min="0" step="1"
+                                    value="<?php echo (int) ( $row['hosei_min'] ?? 0 ); ?>"
+                                    <?php echo empty( $row['has_time'] ) ? 'disabled' : ''; ?>
+                                    <?php echo substr( $row['date'], 0, 7 ) < AM_DB::get_hosei_start_month() ? 'data-before-start="1" title="補正時間の適用開始月（設定ページ）より前のため入力できません"' : ''; ?>>
                             </td>
                             <td class="col-min">
                                 <input type="text" class="am-hayatai-input"

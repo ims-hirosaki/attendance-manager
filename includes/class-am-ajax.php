@@ -44,6 +44,7 @@ class AM_Ajax {
             $is_manual     = (int) ( $row['is_manual']   ?? 0 );
             $jiba          = (int) ( $row['jiba']        ?? 0 );
             $hayatai_min   = (int) ( $row['hayatai_min'] ?? 0 );
+            $hosei_min     = max( 0, (int) ( $row['hosei_min'] ?? 10 ) );
             $note          = sanitize_text_field( $row['note'] ?? '' );
             if ( ! $work_date ) continue;
             $where = 'employee_id = %d';
@@ -67,7 +68,7 @@ class AM_Ajax {
                 'employee_id' => $employee_id, 'crew_code' => $crew_code,
                 'work_date' => $work_date, 'kintai_type' => $kintai_type,
                 'furikae_label' => $furikae_label, 'is_manual' => $is_manual,
-                'jiba' => $jiba, 'hayatai_min' => $hayatai_min, 'note' => $note,
+                'jiba' => $jiba, 'hosei_min' => $hosei_min, 'hayatai_min' => $hayatai_min, 'note' => $note,
                 'updated_at' => current_time( 'mysql' ),
             ];
             $result = ! empty( $matches )
@@ -133,6 +134,8 @@ class AM_Ajax {
                 'midnight_min' => AM_Compute_Chokyo::format_min( $r['midnight_min'] ),
                 'overtime_min' => AM_Compute_Chokyo::format_min( $r['overtime_min'] ),
                 'source_crew_code' => $r['source_crew_code'] ?? '',
+                'hosei_min'    => (int) ( $r['hosei_min'] ?? 0 ),
+                'has_time'     => ! empty( $r['has_time'] ),
             ];
         }
         wp_send_json_success( [ 'rows' => $rows, 'alerts' => $alerts ] );
@@ -178,19 +181,24 @@ class AM_Ajax {
             $is_manual     = (int) ( $row['is_manual']   ?? 0 );
             $chokyo        = (int) ( $row['chokyo']      ?? 0 );
             $hayatai_min   = (int) ( $row['hayatai_min'] ?? 0 );
+            // 補正時間は長距離フラグONの行のみ保存。OFFはNULL（後でONになったら既定10分）
+            $hosei_sql     = $chokyo ? $wpdb->prepare( '%d', max( 0, (int) ( $row['hosei_min'] ?? 10 ) ) ) : 'NULL';
             $note          = sanitize_text_field( $row['note'] ?? '' );
             if ( ! $work_date ) continue;
 
-            $wpdb->query( $wpdb->prepare(
+            $upsert = $wpdb->query( $wpdb->prepare(
                 "INSERT INTO `{$table}`
-                    (`employee_code`,`work_date`,`kintai_type`,`furikae_label`,`is_manual`,`chokyo`,`hayatai_min`,`note`)
-                 VALUES (%s,%s,%s,%s,%d,%d,%d,%s)
+                    (`employee_code`,`work_date`,`kintai_type`,`furikae_label`,`is_manual`,`chokyo`,`hosei_min`,`hayatai_min`,`note`)
+                 VALUES (%s,%s,%s,%s,%d,%d,{$hosei_sql},%d,%s)
                  ON DUPLICATE KEY UPDATE
                     `kintai_type`=VALUES(`kintai_type`), `furikae_label`=VALUES(`furikae_label`),
-                    `is_manual`=VALUES(`is_manual`), `chokyo`=VALUES(`chokyo`),
+                    `is_manual`=VALUES(`is_manual`), `chokyo`=VALUES(`chokyo`), `hosei_min`=VALUES(`hosei_min`),
                     `hayatai_min`=VALUES(`hayatai_min`), `note`=VALUES(`note`), `updated_at`=NOW()",
                 $employee_code, $work_date, $kintai_type, $furikae_label, $is_manual, $chokyo, $hayatai_min, $note
             ) );
+            if ( $upsert === false ) {
+                wp_send_json_error( [ 'message' => '保存に失敗しました：' . $wpdb->last_error ] );
+            }
             $saved++;
         }
         wp_send_json_success( [ 'saved' => $saved ] );
@@ -230,6 +238,8 @@ class AM_Ajax {
         foreach ( $monthly_rows as $r ) {
             $rows[] = [
                 'date'         => $r['date'],
+                'houtei_kinmu' => ! empty( $r['houtei_kinmu'] ),
+                'shitei_kinmu' => ! empty( $r['shitei_kinmu'] ),
                 'start_time'   => $r['start_time']      ?? '',
                 'end_time'     => $r['end_time']         ?? '',
                 'kousoku_min'  => AM_Compute_Chokyo::format_min( $r['kousoku_min'] ),
@@ -239,9 +249,12 @@ class AM_Ajax {
                 'break_min'    => AM_Compute_Chokyo::format_min( $r['break_calc_min'] ),
                 'midnight_min' => AM_Compute_Chokyo::format_min( $r['midnight_min'] ),
                 'overtime_min' => AM_Compute_Chokyo::format_min( $r['overtime_min'] ),
+                'hosei_min'    => (int) ( $r['hosei_min'] ?? 0 ),
+                'has_time'     => ! empty( $r['has_time'] ),
             ];
         }
-        wp_send_json_success( $rows );
+        // JS(refreshDailyRows)は { rows, alerts } 形式を期待する
+        wp_send_json_success( [ 'rows' => $rows, 'alerts' => $monthly_rows[0]['_alerts'] ?? [] ] );
     }
 
     public static function jiba_get_weekly_rows() {
@@ -300,6 +313,17 @@ class AM_Ajax {
     /* ===============================================================
        休日マスタ AJAX（共通）
        ============================================================= */
+
+    public static function hosei_setting_save() {
+        check_ajax_referer( 'am_nonce', 'nonce' );
+        if ( ! current_user_can( 'manage_custom_plugin_settings' ) ) wp_die( -1 );
+        $month = sanitize_text_field( wp_unslash( $_POST['start_month'] ?? '' ) );
+        if ( ! preg_match( '/^\d{4}-(0[1-9]|1[0-2])$/', $month ) ) {
+            wp_send_json_error( [ 'message' => '適用開始月は YYYY-MM 形式で指定してください' ] );
+        }
+        update_option( 'am_hosei_start_month', $month );
+        wp_send_json_success( [ 'start_month' => $month ] );
+    }
 
     public static function holiday_get_rules() {
         check_ajax_referer( 'am_nonce', 'nonce' );

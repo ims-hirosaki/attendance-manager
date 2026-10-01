@@ -225,7 +225,7 @@ class AM_Compute_Chokyo {
                 'is_sun' => $is_sun, 'is_sat' => $is_sat, 'is_shitei_holiday' => $is_shitei,
                 'has_data' => $has_data, 'default_kintai' => $default_kintai,
                 'furikae_label' => '', 'is_manual' => false, 'jiba' => false,
-                'hayatai_min' => 0, 'note' => '',
+                'hayatai_min' => 0, 'hosei_min' => 10, 'note' => '',
                 'start_time' => $start_time, 'end_time' => $end_time,
                 'kousoku_min' => $kousoku_min, 'labor_min' => $labor_min,
                 'drive_min' => $drive_min, 'cargo_min' => $cargo_min,
@@ -246,6 +246,7 @@ class AM_Compute_Chokyo {
             $r['is_manual']   = (bool) $saved['is_manual'];
             $r['jiba']        = (bool) ( $saved['jiba'] ?? false );
             $r['hayatai_min'] = (int)  ( $saved['hayatai_min'] ?? 0 );
+            $r['hosei_min']   = max( 0, (int) ( $saved['hosei_min'] ?? 10 ) );
             $r['note']        = $saved['note'] ?? '';
 
             if ( $r['is_manual'] ) {
@@ -298,6 +299,8 @@ class AM_Compute_Chokyo {
             $r['has_data']  = true;
         }
         unset( $r );
+
+        $rows = self::apply_hosei( $rows, $year_month );
 
         // 承認済み有給の消化日を勤怠種別へ反映（手動設定行は保持）
         foreach ( $rows as &$r ) {
@@ -394,6 +397,32 @@ class AM_Compute_Chokyo {
             $rows[0]['_alerts'] = $pair_alerts;
         }
 
+        return $rows;
+    }
+
+    /**
+     * 補正時間（点呼など）を各行へ適用する。
+     * 始業・終業がない日、適用開始月より前の月、$flag_key 指定時にそのフラグがOFFの日は0（入力不可）。
+     * 日残業は「労働時間＋補正時間－480分」となるよう、補正で増える超過分を元の日残業へ加算する
+     * （元の値に含まれる時間外深夜などの算入は維持する）。
+     * 週集計の労働時間・拘束時間・週残業判定は _build_weekly_static 側で加算する。
+     * $r['has_time'] は「補正時間が有効（入力可）」を表す。
+     */
+    public static function apply_hosei( $rows, $year_month, $flag_key = null ) {
+        $hosei_start = AM_DB::get_hosei_start_month();
+        foreach ( $rows as &$r ) {
+            $enabled = ( $r['start_time'] ?? '' ) !== '' && ( $r['end_time'] ?? '' ) !== ''
+                && $year_month >= $hosei_start
+                && ( $flag_key === null || ! empty( $r[ $flag_key ] ) );
+            $r['has_time']  = $enabled;
+            $r['hosei_min'] = $enabled ? max( 0, (int) ( $r['hosei_min'] ?? 10 ) ) : 0;
+            if ( $r['hosei_min'] > 0 && $r['labor_min'] !== null ) {
+                $labor = (int) $r['labor_min'];
+                $delta = max( 0, $labor + $r['hosei_min'] - 480 ) - max( 0, $labor - 480 );
+                if ( $delta > 0 ) $r['overtime_min'] = (int) ( $r['overtime_min'] ?? 0 ) + $delta;
+            }
+        }
+        unset( $r );
         return $rows;
     }
 
@@ -605,7 +634,7 @@ class AM_Compute_Chokyo {
 
             // sumの初期化
             $sum = array_fill_keys(
-                [ 'kousoku_min','labor_min','overtime_labor_min','drive_min','cargo_min','midnight_min','overtime_min','days' ], 0
+                [ 'kousoku_min','labor_min','overtime_labor_min','drive_min','cargo_min','midnight_min','overtime_min','hosei_min','days' ], 0
             );
 
             // 第1週に前月繰越分を加算（週残業計算のため）
@@ -626,12 +655,15 @@ class AM_Compute_Chokyo {
                     if ( $r && $r['has_data'] ) {
                         $sum['kousoku_min']  += (int)( $r['kousoku_min']  ?? 0 );
                         $sum['labor_min']    += (int)( $r['labor_min']    ?? 0 );
+                        $sum['labor_min']   += (int)( $r['hosei_min'] ?? 0 );
+                        $sum['kousoku_min'] += (int)( $r['hosei_min'] ?? 0 );
+                        $sum['hosei_min']   += (int)( $r['hosei_min'] ?? 0 );
                         $sum['drive_min']    += (int)( $r['drive_min']    ?? 0 );
                         $sum['cargo_min']    += (int)( $r['cargo_min']    ?? 0 );
                         $sum['midnight_min'] += (int)( $r['midnight_min'] ?? 0 );
                         // 振替なしの法定休出勤は実績時間には含めるが、残業判定には含めない。
                         if ( empty( $r['unmatched_houtei_kinmu'] ) ) {
-                            $sum['overtime_labor_min'] += (int)( $r['labor_min'] ?? 0 );
+                            $sum['overtime_labor_min'] += (int)( $r['labor_min'] ?? 0 ) + (int)( $r['hosei_min'] ?? 0 );
                             $sum['overtime_min']       += (int)( $r['overtime_min'] ?? 0 );
                         }
                     }
@@ -724,7 +756,8 @@ class AM_Compute_Chokyo {
 
             $total['confirmed_overtime'] += $w['confirmed_overtime'] ?? 0;
         }
-        $total['break_min'] = $total['kousoku_min'] - $total['labor_min'];
+        $total['break_min'] = 0;
+        foreach ( $weeks as $w ) { if ( ! $w['is_prev_carry'] ) $total['break_min'] += $w['break_min']; }
 
         return [ 'weeks' => $weeks, 'total' => $total ];
     }

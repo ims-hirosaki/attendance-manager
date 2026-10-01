@@ -385,6 +385,12 @@ class AM_DB {
     /* ---------------------------------------------------------------
      * 【長距離用】保存済み勤怠取得
      * ------------------------------------------------------------- */
+    /** 補正時間の適用開始月（YYYY-MM）。この月以降にのみ補正時間を反映する。 */
+    public static function get_hosei_start_month() {
+        $v = (string) get_option( 'am_hosei_start_month', '' );
+        return preg_match( '/^\d{4}-(0[1-9]|1[0-2])$/', $v ) ? $v : date( 'Y-m' );
+    }
+
     public static function get_chokyo_saved_kintai( $employee_id, $year_month, $crew_codes = [] ) {
         global $wpdb;
         $start = $year_month . '-01';
@@ -400,7 +406,7 @@ class AM_DB {
         $params[] = $start;
         $params[] = $end;
         $rows  = $wpdb->get_results( $wpdb->prepare(
-            "SELECT employee_id, crew_code, work_date, kintai_type, furikae_label, is_manual, jiba, hayatai_min, note
+            "SELECT employee_id, crew_code, work_date, kintai_type, furikae_label, is_manual, jiba, hosei_min, hayatai_min, note
              FROM `{$wpdb->prefix}am_chokyo_kintai_log`
              WHERE ({$where}) AND work_date BETWEEN %s AND %s
              ORDER BY (employee_id IS NULL) DESC, id ASC",
@@ -427,7 +433,7 @@ class AM_DB {
         $start = $year_month . '-01';
         $end   = date( 'Y-m-t', strtotime( $start ) );
         $rows  = $wpdb->get_results( $wpdb->prepare(
-            "SELECT work_date, kintai_type, furikae_label, is_manual, chokyo, hayatai_min, note
+            "SELECT work_date, kintai_type, furikae_label, is_manual, chokyo, hosei_min, hayatai_min, note
              FROM `{$wpdb->prefix}am_jiba_kintai_log`
              WHERE employee_code COLLATE utf8mb4_unicode_520_ci = %s
                AND work_date BETWEEN %s AND %s",

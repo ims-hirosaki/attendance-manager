@@ -52,6 +52,7 @@ class Tanpopo_AttendanceManager {
         // --- 種別管理 AJAX ---
         add_action( 'wp_ajax_am_jobtype_get',                [ 'AM_Ajax', 'jobtype_get' ] );
         add_action( 'wp_ajax_am_jobtype_save',               [ 'AM_Ajax', 'jobtype_save' ] );
+        add_action( 'wp_ajax_am_hosei_setting_save',         [ 'AM_Ajax', 'hosei_setting_save' ] );
 
         // --- 集計一覧 AJAX ---
         add_action( 'wp_ajax_am_summary_list_get',           [ 'AM_Ajax', 'summary_list_get' ] );
@@ -105,6 +106,7 @@ class Tanpopo_AttendanceManager {
             `furikae_label`  VARCHAR(30)  NOT NULL DEFAULT '',
             `is_manual`      TINYINT(1)   NOT NULL DEFAULT 0,
             `jiba`           TINYINT(1)   NOT NULL DEFAULT 0 COMMENT '地場フラグ',
+            `hosei_min`      INT          NOT NULL DEFAULT 10 COMMENT '補正時間(点呼など)分',
             `hayatai_min`    INT          NOT NULL DEFAULT 0,
             `note`           VARCHAR(100) NOT NULL DEFAULT '',
             `updated_at`     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -141,6 +143,7 @@ class Tanpopo_AttendanceManager {
             `furikae_label`  VARCHAR(30)  NOT NULL DEFAULT '',
             `is_manual`      TINYINT(1)   NOT NULL DEFAULT 0,
             `chokyo`         TINYINT(1)   NOT NULL DEFAULT 0 COMMENT '長距離フラグ',
+            `hosei_min`      INT          NULL DEFAULT NULL COMMENT '補正時間(点呼など)分 NULL=既定',
             `hayatai_min`    INT          NOT NULL DEFAULT 0,
             `note`           VARCHAR(100) NOT NULL DEFAULT '',
             `updated_at`     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -198,6 +201,25 @@ class Tanpopo_AttendanceManager {
                 && ! $wpdb->get_var( "SHOW COLUMNS FROM `{$table}` LIKE 'overtime_labor_min'" ) ) {
                 $wpdb->query( "ALTER TABLE `{$table}` ADD `overtime_labor_min` INT NULL DEFAULT NULL AFTER `labor_min`" );
             }
+        }
+
+        // 補正時間の適用開始月：未設定なら導入月とし、過去月の集計を変えない
+        if ( get_option( 'am_hosei_start_month', null ) === null ) {
+            add_option( 'am_hosei_start_month', date( 'Y-m' ) );
+        }
+
+        // 長距離：補正時間（点呼など・分）
+        $chokyo_log = $wpdb->prefix . 'am_chokyo_kintai_log';
+        if ( $wpdb->get_var( "SHOW TABLES LIKE '{$chokyo_log}'" )
+            && ! $wpdb->get_var( "SHOW COLUMNS FROM `{$chokyo_log}` LIKE 'hosei_min'" ) ) {
+            $wpdb->query( "ALTER TABLE `{$chokyo_log}` ADD `hosei_min` INT NOT NULL DEFAULT 10 COMMENT '補正時間(点呼など)分' AFTER `jiba`" );
+        }
+
+        // 地場・事務：補正時間（NULL=既定。長距離フラグON時は10分）
+        $jiba_log = $wpdb->prefix . 'am_jiba_kintai_log';
+        if ( $wpdb->get_var( "SHOW TABLES LIKE '{$jiba_log}'" )
+            && ! $wpdb->get_var( "SHOW COLUMNS FROM `{$jiba_log}` LIKE 'hosei_min'" ) ) {
+            $wpdb->query( "ALTER TABLE `{$jiba_log}` ADD `hosei_min` INT NULL DEFAULT NULL COMMENT '補正時間(点呼など)分 NULL=既定' AFTER `chokyo`" );
         }
 
         $this->migrate_chokyo_employee_ids();
@@ -326,8 +348,8 @@ class Tanpopo_AttendanceManager {
         $pages = [ 'attendance-manager', 'attendance-manager-jiba', 'attendance-manager-summary', 'attendance-manager-kousoku-import', 'attendance-manager-settings' ];
         if ( ! in_array( $page, $pages, true ) ) return;
 
-        wp_enqueue_style(  'am-admin', AM_PLUGIN_URL . 'assets/css/admin.css', [], AM_VERSION );
-        wp_enqueue_script( 'am-admin', AM_PLUGIN_URL . 'assets/js/admin.js', [ 'jquery' ], AM_VERSION, true );
+        wp_enqueue_style(  'am-admin', AM_PLUGIN_URL . 'assets/css/admin.css', [], AM_VERSION . '.' . filemtime( AM_PLUGIN_DIR . 'assets/css/admin.css' ) );
+        wp_enqueue_script( 'am-admin', AM_PLUGIN_URL . 'assets/js/admin.js', [ 'jquery' ], AM_VERSION . '.' . filemtime( AM_PLUGIN_DIR . 'assets/js/admin.js' ), true );
         wp_localize_script( 'am-admin', 'amData', [
             'defaultMonth' => date( 'Y-m' ),
             'ajaxUrl'      => admin_url( 'admin-ajax.php' ),
@@ -445,6 +467,7 @@ class Tanpopo_AttendanceManager {
         $dow_labels = [ '日', '月', '火', '水', '木', '金', '土' ];
 
         // 種別管理用データ
+        $hosei_start_month = AM_DB::get_hosei_start_month();
         $job_types = function_exists( 'emp_get_job_types' ) ? emp_get_job_types() : [];
         $mappings  = AM_DB::get_job_type_mappings();
         $unlinked_crew_codes = AM_DB::get_unlinked_crew_codes();
