@@ -397,7 +397,7 @@ class AM_Compute_Chokyo {
                     ),
                 ];
             }
-            if ( self::is_auto_shitei_furikae_enabled() && $shitei_kinmu_count !== $shitei_furi_count ) {
+            if ( $shitei_kinmu_count !== $shitei_furi_count ) {
                 $pair_alerts[] = [
                     'type'    => 'warn',
                     'message' => sprintf(

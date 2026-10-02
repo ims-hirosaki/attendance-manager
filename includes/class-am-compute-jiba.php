@@ -340,7 +340,7 @@ class AM_Compute_Jiba {
             if ( $houtei_kinmu_count !== $houtei_furi_count ) {
                 $pair_alerts[] = [ 'type' => 'warn', 'message' => sprintf( '法定休出勤（%d回）と法定振替休（%d日）の数が一致していません。', $houtei_kinmu_count, $houtei_furi_count ) ];
             }
-            if ( AM_Compute_Chokyo::is_auto_shitei_furikae_enabled() && $shitei_kinmu_count !== $shitei_furi_count ) {
+            if ( $shitei_kinmu_count !== $shitei_furi_count ) {
                 $pair_alerts[] = [ 'type' => 'warn', 'message' => sprintf( '所定休出勤（%d回）と所定振替休（%d日）の数が一致していません。', $shitei_kinmu_count, $shitei_furi_count ) ];
             }
             $rows[0]['_alerts'] = $pair_alerts;
