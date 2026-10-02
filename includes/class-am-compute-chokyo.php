@@ -9,6 +9,18 @@ if ( ! defined( 'ABSPATH' ) ) exit;
  */
 class AM_Compute_Chokyo {
 
+    /**
+     * 所定休日出勤に対する所定振替休の自動割当を有効にするか。
+     *
+     * 振替が任意になったため既定値は無効。ロジックは残し、必要になった場合は
+     * wp-config.php 等で AM_AUTO_SHITEI_FURIKAE_ENABLED を true にすると再開できる。
+     */
+    public static function is_auto_shitei_furikae_enabled() {
+        return defined( 'AM_AUTO_SHITEI_FURIKAE_ENABLED' )
+            ? (bool) constant( 'AM_AUTO_SHITEI_FURIKAE_ENABLED' )
+            : false;
+    }
+
     public static function format_min( $min ) {
         if ( $min === null || $min === '' ) return '';
         $min = (int) $min;
@@ -385,7 +397,7 @@ class AM_Compute_Chokyo {
                     ),
                 ];
             }
-            if ( $shitei_kinmu_count !== $shitei_furi_count ) {
+            if ( self::is_auto_shitei_furikae_enabled() && $shitei_kinmu_count !== $shitei_furi_count ) {
                 $pair_alerts[] = [
                     'type'    => 'warn',
                     'message' => sprintf(
@@ -517,23 +529,26 @@ class AM_Compute_Chokyo {
         }
 
         // ③ 所定振替休割当（所定休日出勤の場合）
-        foreach ( $rows as $i => $r ) {
-            if ( $r['is_manual'] ) continue; // 手動設定行は振替元にしない
-            if ( $r['is_shitei_holiday'] && $r['has_data'] && $r['default_kintai'] === '出勤' ) {
-                $assigned = false;
-                for ( $j = $i + 1; $j < count( $rows ); $j++ ) {
-                    if ( $is_furikae_candidate( $rows[$j] ) ) {
-                        $rows[$j]['default_kintai'] = '所定振替休';
-                        $rows[$j]['furikae_label']  = date( 'm/d', strtotime( $r['date'] ) ) . 'の振替';
-                        $assigned = true;
-                        break;
+        // 振替が任意になったため、機能フラグが有効な場合だけ自動割当する。
+        if ( self::is_auto_shitei_furikae_enabled() ) {
+            foreach ( $rows as $i => $r ) {
+                if ( $r['is_manual'] ) continue; // 手動設定行は振替元にしない
+                if ( $r['is_shitei_holiday'] && $r['has_data'] && $r['default_kintai'] === '出勤' ) {
+                    $assigned = false;
+                    for ( $j = $i + 1; $j < count( $rows ); $j++ ) {
+                        if ( $is_furikae_candidate( $rows[$j] ) ) {
+                            $rows[$j]['default_kintai'] = '所定振替休';
+                            $rows[$j]['furikae_label']  = date( 'm/d', strtotime( $r['date'] ) ) . 'の振替';
+                            $assigned = true;
+                            break;
+                        }
                     }
-                }
-                if ( ! $assigned ) {
-                    $warnings[] = [
-                        'type'    => 'error',
-                        'message' => date( 'm/d', strtotime( $r['date'] ) ) . 'の振替休を割り当てられる日がありません',
-                    ];
+                    if ( ! $assigned ) {
+                        $warnings[] = [
+                            'type'    => 'error',
+                            'message' => date( 'm/d', strtotime( $r['date'] ) ) . 'の振替休を割り当てられる日がありません',
+                        ];
+                    }
                 }
             }
         }
