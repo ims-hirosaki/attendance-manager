@@ -527,7 +527,7 @@
 
                     html += '<tr>';
                     html += '<td class="am-sl-code">' + slEscHtml(r.employee_code) + '</td>';
-                    html += '<td class="am-sl-name">' + slEscHtml(r.name) + (r.special_badge ? ' <span class="am-sl-badge">' + slEscHtml(r.special_badge) + '</span>' : '') + '</td>';
+                    html += '<td class="am-sl-name"><div class="am-sl-name-inner"><span>' + slEscHtml(r.name) + '</span>' + (r.special_badge ? '<span class="am-sl-badge">' + slEscHtml(r.special_badge) + '</span>' : '') + '</div></td>';
                     html += '<td class="am-sl-num">' + r.attendance + '<span class="am-ms-unit">日</span></td>';
                     html += '<td class="am-sl-num' + (r.absent > 0 ? ' am-ms-alert' : '') + '">' + r.absent + '<span class="am-ms-unit">日</span></td>';
                     html += '<td class="am-sl-num' + (r.holiday_work > 0 ? ' am-ms-warn' : '') + '">' + r.holiday_work + '<span class="am-ms-unit">日</span></td>';
