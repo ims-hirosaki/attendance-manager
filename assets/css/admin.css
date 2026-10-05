@@ -1136,3 +1136,16 @@ tr[data-auto="false"] .am-kintai-select {
 .am-import-notice {
     max-width: 790px;
 }
+
+/* 集計一覧：お盆・お正月出勤バッジ */
+.am-sl-badge {
+    display: inline-block;
+    margin-left: 8px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: #b71c1c;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+}
