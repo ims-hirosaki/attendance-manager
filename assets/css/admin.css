@@ -1140,7 +1140,6 @@ tr[data-auto="false"] .am-kintai-select {
 /* 集計一覧：お盆・お正月出勤バッジ */
 .am-sl-badge {
     display: inline-block;
-    margin-left: 8px;
     padding: 2px 8px;
     border-radius: 4px;
     background: #b71c1c;
@@ -1148,4 +1147,11 @@ tr[data-auto="false"] .am-kintai-select {
     font-size: 12px;
     font-weight: 700;
     white-space: nowrap;
+}
+
+.am-sl-name-inner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
 }
