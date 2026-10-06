@@ -71,7 +71,8 @@
                 // 勤怠種別セレクトを更新
                 if (r.kintai_type !== undefined) {
                     $tr.find('.am-kintai-select').val(r.kintai_type);
-                    $tr.attr('data-auto', 'true');
+                    // 手動設定行は data-auto='false' を維持（次回保存で is_manual が落ちないように）
+                    $tr.attr('data-auto', r.is_manual ? 'false' : 'true');
                 }
 
                 // 法定休出勤・所定休出勤バッジを更新
