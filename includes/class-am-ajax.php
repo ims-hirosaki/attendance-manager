@@ -122,6 +122,7 @@ class AM_Ajax {
             $rows[] = [
                 'date'         => $r['date'],
                 'kintai_type'  => $r['default_kintai'] ?? '',
+                'is_manual'    => ! empty( $r['is_manual'] ),
                 'houtei_kinmu' => ! empty( $r['houtei_kinmu'] ),
                 'shitei_kinmu' => ! empty( $r['shitei_kinmu'] ),
                 'start_time'   => $r['start_time']      ?? '',
