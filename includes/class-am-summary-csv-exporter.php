@@ -46,13 +46,20 @@ class AM_Summary_CSV_Exporter {
     private static function write_category( $output, $category, $year_month ) {
         $employees = AM_DB::get_employees_by_category( $category );
         foreach ( $employees['employees'] as $employee ) {
-            $code = 'chokyo' === $category ? ( $employee['crew_code'] ?? '' ) : ( $employee['employee_code'] ?? '' );
-            if ( '' === $code ) continue;
+            if ( 'chokyo' === $category ) {
+                // 長距離の計算処理は、乗務員コードではなく不変の社員IDを受け取る。
+                $key = (int) ( $employee['employee_id'] ?? 0 );
+                if ( ! $key ) continue;
+                $compute = 'AM_Compute_Chokyo';
+            } else {
+                $key = $employee['employee_code'] ?? '';
+                if ( '' === $key ) continue;
+                $compute = 'AM_Compute_Jiba';
+            }
 
-            $compute = 'chokyo' === $category ? 'AM_Compute_Chokyo' : 'AM_Compute_Jiba';
-            $rows     = $compute::get_monthly_rows( $code, $year_month, $employee['name'] );
-            $weekly   = $compute::get_weekly_summary( $code, $year_month, $rows );
-            $summary  = ! empty( $rows ) ? $compute::get_monthly_summary( $rows, $weekly, $code, $year_month ) : [];
+            $rows     = $compute::get_monthly_rows( $key, $year_month, $employee['name'] );
+            $weekly   = $compute::get_weekly_summary( $key, $year_month, $rows );
+            $summary  = ! empty( $rows ) ? $compute::get_monthly_summary( $rows, $weekly, $key, $year_month ) : [];
 
             $shitei_records = [];
             foreach ( $rows as $row ) {
@@ -69,8 +76,10 @@ class AM_Summary_CSV_Exporter {
             $job_type     = $employee['job_type_name'] ?? '';
             $attendance   = (int) ( $summary['attendance'] ?? 0 );
             $labor_min    = (int) ( $summary['labor_min'] ?? 0 );
-            // 長距離・郵便は、CSVの総労働時間に出勤1日あたり10分の点呼時間を加算する。
-            if ( in_array( $job_type, [ '長距離', '郵便' ], true ) ) {
+            // 補正時間の適用開始月以降は、週集計に各日の実際の補正時間が含まれている。
+            // 適用開始月より前だけ、従来どおり出勤1日あたり10分の点呼時間を加算する。
+            if ( $year_month < AM_DB::get_hosei_start_month()
+                && in_array( $job_type, [ '長距離', '郵便' ], true ) ) {
                 $labor_min += 10 * $attendance;
             }
             $record = [
