@@ -329,6 +329,11 @@ class AM_Kousoku_CSV_Importer {
 
         foreach ( self::REQUIRED_INT_COLUMNS as $column ) {
             if ( 'id' === $column ) continue;
+            if ( 'end_next_day' === $column && null === self::null_value( self::normalize_input( $raw[ $column ] ) ) ) {
+                // 空欄は 終業 <= 始業 のとき日またぎ(1)として補う。
+                $data[ $column ] = $data['end_time'] <= $data['start_time'] ? 1 : 0;
+                continue;
+            }
             $data[ $column ] = self::integer_value( $raw[ $column ], $column, $line, false );
         }
         foreach ( self::NULLABLE_INT_COLUMNS as $column ) {
@@ -377,7 +382,7 @@ class AM_Kousoku_CSV_Importer {
     }
 
     private static function integer_value( $value, $column, $line, $nullable ) {
-        $value = self::null_value( $value );
+        $value = self::null_value( self::normalize_input( $value ) );
         if ( null === $value ) {
             if ( $nullable ) return null;
             throw new RuntimeException( sprintf( '%d行目: %s は必須です。', $line, $column ) );
@@ -397,14 +402,43 @@ class AM_Kousoku_CSV_Importer {
         return $date->format( 'Y-m-d' );
     }
 
-    private static function time_value( $value, $column, $line ) {
-        $value = self::null_value( $value );
-        if ( null === $value || ! preg_match( '/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/', trim( $value ), $m ) ) {
-            throw new RuntimeException( sprintf( '%d行目: %s は HH:MM:SS 形式で入力してください。', $line, $column ) );
+    /** 全角英数記号・全角空白を半角にし、前後の空白と不可視文字を除く。 */
+    private static function normalize_input( $value ) {
+        if ( null === $value ) return null;
+        $value = (string) $value;
+        if ( function_exists( 'mb_convert_kana' ) ) {
+            $value = mb_convert_kana( $value, 'as', 'UTF-8' );
         }
-        $hour = (int) $m[1];
-        $min  = (int) $m[2];
-        $sec  = isset( $m[3] ) ? (int) $m[3] : 0;
+        $value = preg_replace( '/[\x{200B}-\x{200D}\x{2060}\x{FEFF}]/u', '', $value );
+        $value = preg_replace( '/^[\s\x{00A0}\x{3000}]+|[\s\x{00A0}\x{3000}]+$/u', '', (string) $value );
+        return $value;
+    }
+
+    /**
+     * 時刻を HH:MM:SS に正規化する。
+     * 全角・前後空白・日付付き(2026/07/01 8:00)・AM/PM・午前/午後を許容する。
+     */
+    private static function time_value( $value, $column, $line ) {
+        $raw   = $value;
+        $value = self::null_value( self::normalize_input( $value ) );
+        $re    = '/^(?:\d{4}[-\/]\d{1,2}[-\/]\d{1,2}(?:\s+|T))?(午前|午後|AM|PM)?\s*(\d{1,2}):(\d{2})(?::(\d{2}))?(?:\.\d+)?\s*(AM|PM|午前|午後)?$/iu';
+        if ( null === $value || ! preg_match( $re, $value, $m ) ) {
+            throw new RuntimeException( sprintf(
+                '%d行目: %s は HH:MM または HH:MM:SS 形式（例 08:00）で入力してください。（入力値: %s）',
+                $line, $column, null === $raw || '' === trim( (string) $raw ) ? '空欄' : trim( (string) $raw )
+            ) );
+        }
+        $hour   = (int) $m[2];
+        $min    = (int) $m[3];
+        $sec    = isset( $m[4] ) && '' !== $m[4] ? (int) $m[4] : 0;
+        $meridi = strtoupper( '' !== $m[1] ? $m[1] : ( $m[5] ?? '' ) );
+        if ( '' !== $meridi ) {
+            $is_pm = in_array( $meridi, [ 'PM', '午後' ], true );
+            if ( $hour < 1 || $hour > 12 ) {
+                throw new RuntimeException( sprintf( '%d行目: %s の時刻が不正です。', $line, $column ) );
+            }
+            $hour = $hour % 12 + ( $is_pm ? 12 : 0 );
+        }
         if ( $hour > 23 || $min > 59 || $sec > 59 ) {
             throw new RuntimeException( sprintf( '%d行目: %s の時刻が不正です。', $line, $column ) );
         }
