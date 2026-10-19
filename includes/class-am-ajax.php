@@ -44,7 +44,7 @@ class AM_Ajax {
             $is_manual     = (int) ( $row['is_manual']   ?? 0 );
             $jiba          = (int) ( $row['jiba']        ?? 0 );
             $hayatai_min   = (int) ( $row['hayatai_min'] ?? 0 );
-            $hosei_min     = max( 0, (int) ( $row['hosei_min'] ?? 10 ) );
+            $hosei_min     = max( 0, (int) ( $row['hosei_min'] ?? AM_DB::get_hosei_default_min() ) );
             $note          = sanitize_text_field( $row['note'] ?? '' );
             if ( ! $work_date ) continue;
             $where = 'employee_id = %d';
@@ -182,8 +182,8 @@ class AM_Ajax {
             $is_manual     = (int) ( $row['is_manual']   ?? 0 );
             $chokyo        = (int) ( $row['chokyo']      ?? 0 );
             $hayatai_min   = (int) ( $row['hayatai_min'] ?? 0 );
-            // 補正時間は長距離フラグONの行のみ保存。OFFはNULL（後でONになったら既定10分）
-            $hosei_sql     = $chokyo ? $wpdb->prepare( '%d', max( 0, (int) ( $row['hosei_min'] ?? 10 ) ) ) : 'NULL';
+            // 補正時間は長距離フラグONの行のみ保存。OFFはNULL（後でONになったらマスタの既定値）
+            $hosei_sql     = $chokyo ? $wpdb->prepare( '%d', max( 0, (int) ( $row['hosei_min'] ?? AM_DB::get_hosei_default_min() ) ) ) : 'NULL';
             $note          = sanitize_text_field( $row['note'] ?? '' );
             if ( ! $work_date ) continue;
 
@@ -322,8 +322,13 @@ class AM_Ajax {
         if ( ! preg_match( '/^\d{4}-(0[1-9]|1[0-2])$/', $month ) ) {
             wp_send_json_error( [ 'message' => '適用開始月は YYYY-MM 形式で指定してください' ] );
         }
+        $default_min = $_POST['default_min'] ?? '';
+        if ( ! preg_match( '/^\d{1,3}$/', (string) $default_min ) ) {
+            wp_send_json_error( [ 'message' => '既定値は0〜999の整数（分）で指定してください' ] );
+        }
         update_option( 'am_hosei_start_month', $month );
-        wp_send_json_success( [ 'start_month' => $month ] );
+        update_option( 'am_hosei_default_min', (int) $default_min );
+        wp_send_json_success( [ 'start_month' => $month, 'default_min' => (int) $default_min ] );
     }
 
     public static function holiday_get_rules() {

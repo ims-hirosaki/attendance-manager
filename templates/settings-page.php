@@ -130,7 +130,7 @@
         <span class="dashicons dashicons-clock"></span>
         補正時間（点呼など）
     </div>
-    <p class="am-settings-section-desc">長距離の週集計の労働時間に補正時間を加算する開始月を設定します。この月より前の月は補正時間が0扱いとなり、過去の集計は変わりません。</p>
+    <p class="am-settings-section-desc">長距離の週集計の労働時間に補正時間を加算する開始月を設定します。この月より前の月は補正時間が0扱いとなり、過去の集計は変わりません。既定値は、長距離フラグONの日で補正時間が未入力（未保存）の場合に使われる分数です。保存済みの値は変わりません。</p>
     <div class="am-card">
         <div class="am-card-header"><span class="dashicons dashicons-calendar-alt"></span> 適用開始月</div>
         <div class="am-card-body">
@@ -138,6 +138,10 @@
                 <div class="am-form-group">
                     <label class="am-label" for="hosei-start-month">適用開始月</label>
                     <input type="month" id="hosei-start-month" class="am-input-month" value="<?php echo esc_attr( $hosei_start_month ); ?>">
+                </div>
+                <div class="am-form-group">
+                    <label class="am-label" for="hosei-default-min">既定値（分）</label>
+                    <input type="number" id="hosei-default-min" class="am-input-month" min="0" max="999" step="1" value="<?php echo (int) $hosei_default_min; ?>">
                 </div>
                 <div class="am-form-group am-form-group--btn">
                     <button type="button" id="hosei-btn-save" class="am-btn am-btn-primary">

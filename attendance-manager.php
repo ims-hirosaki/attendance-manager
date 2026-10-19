@@ -355,6 +355,7 @@ class Tanpopo_AttendanceManager {
             'ajaxUrl'      => admin_url( 'admin-ajax.php' ),
             'nonce'        => wp_create_nonce( 'am_nonce' ),
             'currentPage'  => $page,
+            'hoseiDefault' => AM_DB::get_hosei_default_min(),
         ] );
     }
 
@@ -468,6 +469,7 @@ class Tanpopo_AttendanceManager {
 
         // 種別管理用データ
         $hosei_start_month = AM_DB::get_hosei_start_month();
+        $hosei_default_min = AM_DB::get_hosei_default_min();
         $job_types = function_exists( 'emp_get_job_types' ) ? emp_get_job_types() : [];
         $mappings  = AM_DB::get_job_type_mappings();
         $unlinked_crew_codes = AM_DB::get_unlinked_crew_codes();
