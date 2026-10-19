@@ -50,7 +50,6 @@ $page_url = admin_url( 'admin.php?page=attendance-manager' );
                             </option>
                             <?php endforeach; ?>
                         </select>
-                        <p class="description" style="margin:4px 0 0;">※[]は社員コード、()は乗務員コード</p>
                     </div>
                     <div class="am-form-group">
                         <label class="am-label" for="am-select-month">対象月</label>
@@ -62,6 +61,7 @@ $page_url = admin_url( 'admin.php?page=attendance-manager' );
                         </button>
                     </div>
                 </div>
+                <p class="description" style="margin:8px 0 0;">※[]は社員コード、()は乗務員コード</p>
             </form>
         </div>
     </div>
