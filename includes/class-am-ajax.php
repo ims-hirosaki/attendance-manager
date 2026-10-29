@@ -81,6 +81,7 @@ class AM_Ajax {
             $saved++;
         }
         $wpdb->query( 'COMMIT' );
+        AM_REST_API::invalidate_cache();
         wp_send_json_success( [ 'saved' => $saved ] );
     }
 
@@ -202,6 +203,7 @@ class AM_Ajax {
             }
             $saved++;
         }
+        AM_REST_API::invalidate_cache();
         wp_send_json_success( [ 'saved' => $saved ] );
     }
 
@@ -328,6 +330,7 @@ class AM_Ajax {
         }
         update_option( 'am_hosei_start_month', $month );
         update_option( 'am_hosei_default_min', (int) $default_min );
+        AM_REST_API::invalidate_cache();
         wp_send_json_success( [ 'start_month' => $month, 'default_min' => (int) $default_min ] );
     }
 
@@ -355,6 +358,7 @@ class AM_Ajax {
         else            { $wpdb->insert( $table, $data ); $id = $wpdb->insert_id; }
 
         if ( $wpdb->last_error ) wp_send_json_error( [ 'message' => $wpdb->last_error ] );
+        AM_REST_API::invalidate_cache();
         wp_send_json_success( [ 'id' => $id ] );
     }
 
@@ -363,6 +367,7 @@ class AM_Ajax {
         if ( ! current_user_can( 'manage_custom_plugin_settings' ) ) wp_die( -1 );
         global $wpdb;
         $wpdb->delete( $wpdb->prefix . 'am_holiday_rules', [ 'id' => (int) ( $_POST['id'] ?? 0 ) ] );
+        AM_REST_API::invalidate_cache();
         wp_send_json_success();
     }
 
@@ -374,6 +379,7 @@ class AM_Ajax {
             [ 'is_active' => (int) ( $_POST['is_active'] ?? 0 ) ],
             [ 'id'        => (int) ( $_POST['id']        ?? 0 ) ]
         );
+        AM_REST_API::invalidate_cache();
         wp_send_json_success();
     }
 
@@ -514,6 +520,7 @@ class AM_Ajax {
 
         $result = AM_DB::save_job_type_mapping( $job_type_name, $category );
         if ( $result ) {
+            AM_REST_API::invalidate_cache();
             wp_send_json_success();
         } else {
             wp_send_json_error( [ 'message' => '保存に失敗しました' ] );

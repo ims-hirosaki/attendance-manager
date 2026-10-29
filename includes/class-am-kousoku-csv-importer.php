@@ -99,6 +99,7 @@ class AM_Kousoku_CSV_Importer {
             $result['message'] = $e->getMessage();
         }
 
+        AM_REST_API::invalidate_cache();
         set_transient( self::result_key(), $result, 5 * MINUTE_IN_SECONDS );
         wp_safe_redirect( admin_url( 'admin.php?page=attendance-manager-kousoku-import&am_imported=1' ) );
         exit;
