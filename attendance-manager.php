@@ -18,6 +18,7 @@ require_once AM_PLUGIN_DIR . 'includes/class-am-compute-jiba.php';
 require_once AM_PLUGIN_DIR . 'includes/class-am-ajax.php';
 require_once AM_PLUGIN_DIR . 'includes/class-am-kousoku-csv-importer.php';
 require_once AM_PLUGIN_DIR . 'includes/class-am-summary-csv-exporter.php';
+require_once AM_PLUGIN_DIR . 'includes/class-am-rest-api.php';
 
 if ( ! class_exists( 'Tanpopo_AttendanceManager' ) ) :
 
@@ -30,6 +31,7 @@ class Tanpopo_AttendanceManager {
         add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_assets' ] );
         add_action( 'admin_init',            [ $this, 'migrate_existing_tables' ] );
         register_activation_hook( __FILE__,  [ $this, 'activate' ] );
+        AM_REST_API::init();
 
         // --- 長距離 AJAX ---
         add_action( 'wp_ajax_am_chokyo_kintai_save',         [ 'AM_Ajax', 'chokyo_kintai_save' ] );
