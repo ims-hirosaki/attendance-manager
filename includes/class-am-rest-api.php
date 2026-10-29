@@ -14,7 +14,7 @@ class AM_REST_API {
 
     const NAMESPACE_V1   = 'attendance-manager/v1';
     const CAP_EXPORT     = 'am_export_data';
-    const ROLE_VIEWER    = 'am_data_viewer';
+    const ROLE_API       = 'api_reader';
     const CACHE_TTL      = DAY_IN_SECONDS;
     const VERSION_OPTION = 'am_api_cache_version';
 
@@ -24,14 +24,19 @@ class AM_REST_API {
     }
 
     /**
-     * 閲覧専用ロールを用意する（FTPデプロイでは有効化フックが走らないため init で確認）。
+     * 「API取得」ロールを用意する（FTPデプロイでは有効化フックが走らないため init で確認）。
+     * ロールは他のプラグインとも共有する想定。既に存在する場合は作り直さず、
+     * このプラグイン用のケイパビリティだけを追加する。
      */
     public static function ensure_role() {
-        if ( get_role( self::ROLE_VIEWER ) ) return;
-        add_role( self::ROLE_VIEWER, '勤怠データ閲覧（API専用）', [
-            'read'           => true,
-            self::CAP_EXPORT => true,
-        ] );
+        $role = get_role( self::ROLE_API );
+        if ( ! $role ) {
+            add_role( self::ROLE_API, 'API取得', [ 'read' => true ] );
+            $role = get_role( self::ROLE_API );
+        }
+        if ( $role && ! $role->has_cap( self::CAP_EXPORT ) ) {
+            $role->add_cap( self::CAP_EXPORT );
+        }
     }
 
     public static function register_routes() {
