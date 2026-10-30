@@ -62,6 +62,23 @@ class AM_REST_API {
                 'refresh'       => [ 'type' => 'boolean', 'default' => false ],
             ],
         ] );
+        // 【試験的】全従業員一括取得。重い処理のため offset / limit で分割取得もできる。
+        register_rest_route( self::NAMESPACE_V1, '/timesheet-all', [
+            'methods'             => 'GET',
+            'callback'            => [ __CLASS__, 'get_timesheet_all' ],
+            'permission_callback' => [ __CLASS__, 'check_permission' ],
+            'args'                => [
+                'year_month' => [
+                    'type'     => 'string',
+                    'required' => true,
+                    'pattern'  => '^\d{4}-(0[1-9]|1[0-2])$',
+                ],
+                'category'   => [ 'type' => 'string', 'enum' => [ 'chokyo', 'jiba' ] ],
+                'offset'     => [ 'type' => 'integer', 'default' => 0, 'minimum' => 0 ],
+                'limit'      => [ 'type' => 'integer', 'default' => 0, 'minimum' => 0 ],
+                'refresh'    => [ 'type' => 'boolean', 'default' => false ],
+            ],
+        ] );
     }
 
     public static function check_permission() {
@@ -95,8 +112,8 @@ class AM_REST_API {
      * 個人別月次勤怠（日次明細・週次・月次サマリ）
      * ------------------------------------------------------------- */
     public static function get_timesheet( WP_REST_Request $request ) {
+        if ( function_exists( 'set_time_limit' ) ) @set_time_limit( 120 );
         $employee_code = trim( (string) $request['employee_code'] );
-        $year_month    = (string) $request['year_month'];
 
         $found = null;
         foreach ( [ 'chokyo', 'jiba' ] as $category ) {
@@ -111,21 +128,85 @@ class AM_REST_API {
             return new WP_Error( 'am_not_found', '該当する社員が見つかりません。', [ 'status' => 404 ] );
         }
 
-        // 前月以前は確定済みとみなして1日キャッシュする。当月・未来月はキャッシュしない。
-        $cacheable = $year_month < current_time( 'Y-m' );
-        $cache_key = 'am_api_ts_' . md5( self::cache_version() . '|' . $employee_code . '|' . $year_month );
-        if ( $cacheable && ! $request['refresh'] ) {
-            $cached = get_transient( $cache_key );
-            if ( false !== $cached ) {
-                $cached['cached'] = true;
-                return rest_ensure_response( $cached );
+        $data = self::build_timesheet( $found['category'], $found['emp'], (string) $request['year_month'], (bool) $request['refresh'] );
+        return is_wp_error( $data ) ? $data : rest_ensure_response( $data );
+    }
+
+    /* ---------------------------------------------------------------
+     * 【試験的】全従業員の月次勤怠を一括取得
+     *
+     * 社員ごとに build_timesheet() を呼ぶ（キャッシュも社員単位で共有）。
+     * 1人の失敗で全体を止めず、errors に積んで続行する。
+     * 重くてタイムアウトする場合は offset / limit で分割して取得する。
+     * ------------------------------------------------------------- */
+    public static function get_timesheet_all( WP_REST_Request $request ) {
+        if ( function_exists( 'wp_raise_memory_limit' ) ) wp_raise_memory_limit( 'admin' );
+        if ( function_exists( 'set_time_limit' ) ) @set_time_limit( 300 );
+
+        $year_month = (string) $request['year_month'];
+        $categories = $request['category'] ? [ $request['category'] ] : [ 'chokyo', 'jiba' ];
+
+        $targets = [];
+        foreach ( $categories as $category ) {
+            foreach ( self::employees_in_category( $category ) as $emp ) {
+                $targets[] = [ 'category' => $category, 'emp' => $emp ];
             }
         }
 
-        if ( function_exists( 'set_time_limit' ) ) @set_time_limit( 120 );
+        $total  = count( $targets );
+        $offset = (int) $request['offset'];
+        $limit  = (int) $request['limit'];
+        $slice  = $limit > 0 ? array_slice( $targets, $offset, $limit ) : array_slice( $targets, $offset );
 
-        $category = $found['category'];
-        $emp      = $found['emp'];
+        $started   = microtime( true );
+        $employees = [];
+        $errors    = [];
+        foreach ( $slice as $t ) {
+            try {
+                $data = self::build_timesheet( $t['category'], $t['emp'], $year_month, (bool) $request['refresh'] );
+            } catch ( Throwable $e ) {
+                $data = new WP_Error( 'am_exception', $e->getMessage() );
+            }
+            if ( is_wp_error( $data ) ) {
+                $errors[] = [
+                    'employee_code' => $t['emp']['employee_code'],
+                    'name'          => $t['emp']['name'],
+                    'message'       => $data->get_error_message(),
+                ];
+                continue;
+            }
+            $employees[] = $data;
+        }
+
+        return rest_ensure_response( [
+            'year_month'      => $year_month,
+            'total_employees' => $total,
+            'offset'          => $offset,
+            'returned'        => count( $employees ),
+            'elapsed_sec'     => round( microtime( true ) - $started, 2 ),
+            'errors'          => $errors,
+            'employees'       => $employees,
+        ] );
+    }
+
+    /**
+     * 1人分の月次勤怠を組み立てる（前月以前は1日キャッシュ）。
+     * 成功時は配列、失敗時は WP_Error を返す。
+     */
+    private static function build_timesheet( $category, $emp, $year_month, $refresh = false ) {
+        $employee_code = (string) $emp['employee_code'];
+
+        // 前月以前は確定済みとみなして1日キャッシュする。当月・未来月はキャッシュしない。
+        $cacheable = $year_month < current_time( 'Y-m' );
+        $cache_key = 'am_api_ts_' . md5( self::cache_version() . '|' . $employee_code . '|' . $year_month );
+        if ( $cacheable && ! $refresh ) {
+            $cached = get_transient( $cache_key );
+            if ( false !== $cached ) {
+                $cached['cached'] = true;
+                return $cached;
+            }
+        }
+
         if ( 'chokyo' === $category ) {
             $key = (int) ( $emp['employee_id'] ?? 0 );
             if ( ! $key ) {
@@ -165,7 +246,7 @@ class AM_REST_API {
         if ( $cacheable ) {
             set_transient( $cache_key, $data, self::CACHE_TTL );
         }
-        return rest_ensure_response( $data );
+        return $data;
     }
 
     /* ---------------------------------------------------------------
