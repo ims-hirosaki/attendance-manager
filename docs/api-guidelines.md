@@ -160,5 +160,8 @@ RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
 | 勤怠管理 | `attendance-manager/v1` | `GET /employees` | 社員一覧（区分・職種付き） | 運用中 |
 | 勤怠管理 | `attendance-manager/v1` | `GET /timesheet` | 1 人 × 1 か月の日次・週次・月次サマリ | 運用中 |
 | 勤怠管理 | `attendance-manager/v1` | `GET /timesheet-all` | 全従業員の月次勤怠（`offset` / `limit` で分割可） | 試験的 |
+| フェリー手当管理 | `ferry-allowance-manager/v1` | `GET /employees` | 在籍社員一覧 | 運用準備中 |
+| フェリー手当管理 | `ferry-allowance-manager/v1` | `GET /records` | 1 人 × 1 か月の実績明細・合計 | 運用準備中 |
+| フェリー手当管理 | `ferry-allowance-manager/v1` | `GET /summary` | 月次サマリ（実績のある全社員の件数・手当合計） | 運用準備中 |
 
 ※ 他のプラグインの API を発行したら、この表に追記する。
