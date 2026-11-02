@@ -409,7 +409,7 @@ class AM_Ajax {
                 ? AM_Compute_Chokyo::get_monthly_summary( $monthly_rows, $weekly, $employee_id, $year_month )
                 : null;
 
-            $rows[] = self::_format_summary_row( $emp['employee_code'], $emp['name'], 'chokyo', $summary, self::_special_holiday_badge( $monthly_rows, $year_month ) );
+            $rows[] = self::_format_summary_row( $emp['employee_code'], $emp['name'], 'chokyo', $summary, self::_special_holiday_badge( $monthly_rows, $year_month ), $emp );
         }
 
         // 地場・事務
@@ -425,7 +425,7 @@ class AM_Ajax {
                 ? AM_Compute_Jiba::get_monthly_summary( $monthly_rows, $weekly, $employee_code, $year_month )
                 : null;
 
-            $rows[] = self::_format_summary_row( $employee_code, $emp['name'], 'jiba', $summary, self::_special_holiday_badge( $monthly_rows, $year_month ) );
+            $rows[] = self::_format_summary_row( $employee_code, $emp['name'], 'jiba', $summary, self::_special_holiday_badge( $monthly_rows, $year_month ), $emp );
         }
 
         wp_send_json_success( $rows );
@@ -448,7 +448,7 @@ class AM_Ajax {
         return '';
     }
 
-    private static function _format_summary_row( $employee_code, $name, $category, $summary, $special_badge = '' ) {
+    private static function _format_summary_row( $employee_code, $name, $category, $summary, $special_badge = '', $emp = [] ) {
         $labor_min    = $summary['labor_min']   ?? 0;
         $hayatai_min  = $summary['hayatai_min'] ?? 0;
         $overtime_min = $summary['overtime_min'] ?? 0;
@@ -456,6 +456,8 @@ class AM_Ajax {
             'employee_code'  => $employee_code,
             'name'           => $name,
             'category'       => $category,
+            'affiliation_id'   => (int) ( $emp['affiliation_id'] ?? 0 ),
+            'affiliation_name' => $emp['affiliation_name'] ?? '未所属',
             'special_badge'  => $special_badge,
             'attendance'     => $summary['attendance']     ?? 0,
             'absent'         => $summary['absent']         ?? 0,
