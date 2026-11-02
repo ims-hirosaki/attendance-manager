@@ -46,7 +46,7 @@ $page_url = admin_url( 'admin.php?page=attendance-manager' );
                             <option value="<?php echo esc_attr( $emp['employee_id'] ); ?>"
                                 data-affil="<?php echo esc_attr( $emp['affiliation_id'] ); ?>"
                                 <?php selected( $selected_employee_id, $emp['employee_id'] ); ?>>
-                                <?php if ( $emp['employee_code'] !== '―' ) : ?>[<?php echo esc_html( $emp['employee_code'] ); ?>]<?php endif; ?><?php echo esc_html( $emp['name'] ); ?>
+                                <?php if ( $emp['employee_code'] !== '―' ) : ?>[<?php echo esc_html( $emp['employee_code'] ); ?>]<?php endif; ?><?php echo esc_html( $emp['name'] ); ?><?php if ( ! empty( $emp['crew_code'] ) ) : ?>（<?php echo esc_html( $emp['crew_code'] ); ?>）<?php endif; ?>
                             </option>
                             <?php endforeach; ?>
                         </select>
@@ -61,6 +61,7 @@ $page_url = admin_url( 'admin.php?page=attendance-manager' );
                         </button>
                     </div>
                 </div>
+                <p class="description" style="margin:8px 0 0;">※[]は社員コード、()は乗務員コード</p>
             </form>
         </div>
     </div>

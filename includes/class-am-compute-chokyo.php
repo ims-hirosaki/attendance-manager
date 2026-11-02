@@ -237,7 +237,7 @@ class AM_Compute_Chokyo {
                 'is_sun' => $is_sun, 'is_sat' => $is_sat, 'is_shitei_holiday' => $is_shitei,
                 'has_data' => $has_data, 'default_kintai' => $default_kintai,
                 'furikae_label' => '', 'is_manual' => false, 'jiba' => false,
-                'hayatai_min' => 0, 'hosei_min' => 10, 'note' => '',
+                'hayatai_min' => 0, 'hosei_min' => AM_DB::get_hosei_default_min(), 'note' => '',
                 'start_time' => $start_time, 'end_time' => $end_time,
                 'kousoku_min' => $kousoku_min, 'labor_min' => $labor_min,
                 'drive_min' => $drive_min, 'cargo_min' => $cargo_min,
@@ -258,7 +258,7 @@ class AM_Compute_Chokyo {
             $r['is_manual']   = (bool) $saved['is_manual'];
             $r['jiba']        = (bool) ( $saved['jiba'] ?? false );
             $r['hayatai_min'] = (int)  ( $saved['hayatai_min'] ?? 0 );
-            $r['hosei_min']   = max( 0, (int) ( $saved['hosei_min'] ?? 10 ) );
+            $r['hosei_min']   = max( 0, (int) ( $saved['hosei_min'] ?? AM_DB::get_hosei_default_min() ) );
             $r['note']        = $saved['note'] ?? '';
 
             if ( $r['is_manual'] ) {
@@ -427,7 +427,7 @@ class AM_Compute_Chokyo {
                 && $year_month >= $hosei_start
                 && ( $flag_key === null || ! empty( $r[ $flag_key ] ) );
             $r['has_time']  = $enabled;
-            $r['hosei_min'] = $enabled ? max( 0, (int) ( $r['hosei_min'] ?? 10 ) ) : 0;
+            $r['hosei_min'] = $enabled ? max( 0, (int) ( $r['hosei_min'] ?? AM_DB::get_hosei_default_min() ) ) : 0;
             if ( $r['hosei_min'] > 0 && $r['labor_min'] !== null ) {
                 $labor = (int) $r['labor_min'];
                 $delta = max( 0, $labor + $r['hosei_min'] - 480 ) - max( 0, $labor - 480 );

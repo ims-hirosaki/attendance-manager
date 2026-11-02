@@ -391,6 +391,12 @@ class AM_DB {
         return preg_match( '/^\d{4}-(0[1-9]|1[0-2])$/', $v ) ? $v : date( 'Y-m' );
     }
 
+    /** 補正時間の既定値（分）。マスタ（設定ページ）で変更可。未設定時は7分。 */
+    public static function get_hosei_default_min() {
+        $v = get_option( 'am_hosei_default_min', null );
+        return ( $v !== null && is_numeric( $v ) && (int) $v >= 0 ) ? (int) $v : 7;
+    }
+
     public static function get_chokyo_saved_kintai( $employee_id, $year_month, $crew_codes = [] ) {
         global $wpdb;
         $start = $year_month . '-01';

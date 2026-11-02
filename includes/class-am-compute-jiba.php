@@ -265,7 +265,7 @@ class AM_Compute_Jiba {
         }
         unset( $r );
 
-        // 補正時間（点呼など）：長距離フラグON日のみ有効（初期値10分、OFFは0）
+        // 補正時間（点呼など）：長距離フラグON日のみ有効（初期値はマスタの既定値、OFFは0）
         $rows = AM_Compute_Chokyo::apply_hosei( $rows, $year_month, 'chokyo' );
 
         // 承認済み有給の消化日を勤怠種別へ反映（手動設定行は保持）

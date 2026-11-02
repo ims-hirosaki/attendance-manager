@@ -199,7 +199,7 @@
                     furikae_label: $tr.data('furikae') || '',
                     is_manual: $tr.attr('data-auto') === 'false' ? 1 : 0,
                     jiba: $tr.find('.am-jiba-input').is(':checked') ? 1 : 0,
-                    hosei_min: $tr.find('.am-hosei-input').is(':disabled') ? 10 : Math.max(0, parseInt($tr.find('.am-hosei-input').val(), 10) || 0),
+                    hosei_min: $tr.find('.am-hosei-input').is(':disabled') ? amData.hoseiDefault : Math.max(0, parseInt($tr.find('.am-hosei-input').val(), 10) || 0),
                     hayatai_min: parseMin($tr.find('.am-hayatai-input').val()),
                     note: $tr.find('.am-note-input').val() || '',
                 });
@@ -253,7 +253,7 @@
             var $hosei = $tr.find('.am-hosei-input');
             var hasTime = $.trim($tr.find('td:nth-child(3)').text()) !== '' && $.trim($tr.find('td:nth-child(4)').text()) !== '';
             if ($(this).is(':checked') && hasTime && !$hosei.data('before-start')) {
-                $hosei.prop('disabled', false).val(10);
+                $hosei.prop('disabled', false).val(amData.hoseiDefault);
             } else {
                 $hosei.prop('disabled', true).val(0);
             }
@@ -273,7 +273,7 @@
                     furikae_label: $tr.data('furikae') || '',
                     is_manual: $tr.attr('data-auto') === 'false' ? 1 : 0,
                     chokyo: $tr.find('.am-chokyo-input').is(':checked') ? 1 : 0,
-                    hosei_min: $tr.find('.am-hosei-input').is(':disabled') ? 10 : Math.max(0, parseInt($tr.find('.am-hosei-input').val(), 10) || 0),
+                    hosei_min: $tr.find('.am-hosei-input').is(':disabled') ? amData.hoseiDefault : Math.max(0, parseInt($tr.find('.am-hosei-input').val(), 10) || 0),
                     hayatai_min: parseMin($tr.find('.am-hayatai-input').val()),
                     note: $tr.find('.am-note-input').val() || '',
                 });
@@ -318,7 +318,8 @@
         $(document).on('click', '#hosei-btn-save', function () {
             var $m = $('#hosei-message');
             $.post(amData.ajaxUrl, {
-                action: 'am_hosei_setting_save', nonce: amData.nonce, start_month: $('#hosei-start-month').val()
+                action: 'am_hosei_setting_save', nonce: amData.nonce, start_month: $('#hosei-start-month').val(),
+                default_min: $('#hosei-default-min').val()
             }, function (res) {
                 $m.text(res.success ? '保存しました' : (res.data && res.data.message) || '保存に失敗しました')
                   .css('color', res.success ? '#2c5f2e' : '#d63638');

@@ -18,6 +18,7 @@ require_once AM_PLUGIN_DIR . 'includes/class-am-compute-jiba.php';
 require_once AM_PLUGIN_DIR . 'includes/class-am-ajax.php';
 require_once AM_PLUGIN_DIR . 'includes/class-am-kousoku-csv-importer.php';
 require_once AM_PLUGIN_DIR . 'includes/class-am-summary-csv-exporter.php';
+require_once AM_PLUGIN_DIR . 'includes/class-am-rest-api.php';
 
 if ( ! class_exists( 'Tanpopo_AttendanceManager' ) ) :
 
@@ -30,6 +31,7 @@ class Tanpopo_AttendanceManager {
         add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_assets' ] );
         add_action( 'admin_init',            [ $this, 'migrate_existing_tables' ] );
         register_activation_hook( __FILE__,  [ $this, 'activate' ] );
+        AM_REST_API::init();
 
         // --- 長距離 AJAX ---
         add_action( 'wp_ajax_am_chokyo_kintai_save',         [ 'AM_Ajax', 'chokyo_kintai_save' ] );
@@ -355,6 +357,7 @@ class Tanpopo_AttendanceManager {
             'ajaxUrl'      => admin_url( 'admin-ajax.php' ),
             'nonce'        => wp_create_nonce( 'am_nonce' ),
             'currentPage'  => $page,
+            'hoseiDefault' => AM_DB::get_hosei_default_min(),
         ] );
     }
 
@@ -468,6 +471,7 @@ class Tanpopo_AttendanceManager {
 
         // 種別管理用データ
         $hosei_start_month = AM_DB::get_hosei_start_month();
+        $hosei_default_min = AM_DB::get_hosei_default_min();
         $job_types = function_exists( 'emp_get_job_types' ) ? emp_get_job_types() : [];
         $mappings  = AM_DB::get_job_type_mappings();
         $unlinked_crew_codes = AM_DB::get_unlinked_crew_codes();
