@@ -5,6 +5,7 @@ $page_url = admin_url( 'admin.php?page=attendance-manager' );
 <div class="wrap am-wrap">
 
     <div class="am-page-header">
+        <?php AM_Fetch_Request::render_button(); ?>
         <h1 class="am-page-title">
             <span class="dashicons dashicons-car"></span>
             勤怠管理 | 長距離

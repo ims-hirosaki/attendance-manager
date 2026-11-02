@@ -19,6 +19,7 @@ require_once AM_PLUGIN_DIR . 'includes/class-am-ajax.php';
 require_once AM_PLUGIN_DIR . 'includes/class-am-kousoku-csv-importer.php';
 require_once AM_PLUGIN_DIR . 'includes/class-am-summary-csv-exporter.php';
 require_once AM_PLUGIN_DIR . 'includes/class-am-rest-api.php';
+require_once AM_PLUGIN_DIR . 'includes/class-am-fetch-request.php';
 
 if ( ! class_exists( 'Tanpopo_AttendanceManager' ) ) :
 
@@ -32,6 +33,7 @@ class Tanpopo_AttendanceManager {
         add_action( 'admin_init',            [ $this, 'migrate_existing_tables' ] );
         register_activation_hook( __FILE__,  [ $this, 'activate' ] );
         AM_REST_API::init();
+        AM_Fetch_Request::init();
 
         // --- 長距離 AJAX ---
         add_action( 'wp_ajax_am_chokyo_kintai_save',         [ 'AM_Ajax', 'chokyo_kintai_save' ] );
@@ -358,6 +360,7 @@ class Tanpopo_AttendanceManager {
             'nonce'        => wp_create_nonce( 'am_nonce' ),
             'currentPage'  => $page,
             'hoseiDefault' => AM_DB::get_hosei_default_min(),
+            'fetchRows'    => AM_Fetch_Request::can_fetch() ? AM_Fetch_Request::rows() : [],
         ] );
     }
 

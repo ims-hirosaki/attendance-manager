@@ -5,6 +5,7 @@ $page_url = admin_url( 'admin.php?page=attendance-manager-jiba' );
 <div class="wrap am-wrap">
 
     <div class="am-page-header">
+        <?php AM_Fetch_Request::render_button(); ?>
         <h1 class="am-page-title">
             <span class="dashicons dashicons-groups"></span>
             勤怠管理 | 地場・事務

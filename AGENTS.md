@@ -23,6 +23,9 @@ Pushes to `main` auto-deploy to production via `.github/workflows/deploy.yml` (F
 | `includes/class-am-ajax.php` | `wp_ajax_*` handlers — validates input, calls DB and compute classes, returns JSON |
 | `includes/class-am-compute-chokyo.php` | Business logic for Chokyo (長距離) time calculations |
 | `includes/class-am-compute-jiba.php` | Business logic for Jiba (地場・事務) time calculations |
+| `includes/class-am-fetch-request.php` | 「最新データを取得」ボタン（長距離・地場事務・集計一覧のページ右上）。取得依頼の作成・到着検知・履歴管理 |
+| `includes/class-am-kousoku-xlsx-importer.php` / `class-am-xlsx-reader.php` | 拘束時間管理表 xlsx → `wp_kousoku_log` の取込（サーバー側 `import_kousoku.php` と同じ仕様の移植） |
+| `server-scripts/` | 取得サーバー（WordPress の外）用のスクリプトと反映手順。依頼を受けて地球号から取得する `chikyu_request_poll.py` |
 | `templates/` | PHP view files rendered by AJAX handlers or page callbacks |
 | `assets/js/admin.js` | jQuery-based frontend — all AJAX calls, DOM manipulation, table rendering |
 
