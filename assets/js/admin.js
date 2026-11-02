@@ -488,6 +488,33 @@
             return $('<span>').text(str == null ? '' : String(str)).html();
         };
 
+        var slAffil = 'all';
+
+        var slApplyFilter = function () {
+            $('#am-sl-tbody tr[data-affil]').each(function () {
+                $(this).toggle(slAffil === 'all' || String($(this).data('affil')) === String(slAffil));
+            });
+        };
+
+        var slBuildChips = function (rows) {
+            var map = {}, order = [];
+            $.each(rows, function (_, r) {
+                if (!(r.affiliation_id in map)) { map[r.affiliation_id] = r.affiliation_name; order.push(r.affiliation_id); }
+            });
+            if (order.length < 2) { slAffil = 'all'; $('#am-sl-chips').hide().empty(); return; }
+            if (slAffil !== 'all' && !(slAffil in map)) slAffil = 'all';
+            var h = '<button type="button" class="am-chip' + (slAffil === 'all' ? ' am-chip-active' : '') + '" data-affil="all">すべて</button>';
+            $.each(order, function (_, id) {
+                h += '<button type="button" class="am-chip' + (String(slAffil) === String(id) ? ' am-chip-active' : '') + '" data-affil="' + slEscHtml(id) + '">' + slEscHtml(map[id]) + '</button>';
+            });
+            $('#am-sl-chips').html(h).show();
+        };
+
+        $(document).on('click', '#am-sl-chips .am-chip', function () {
+            slAffil = $(this).data('affil');
+            slApplyFilter();
+        });
+
         var slLoad = function () {
             var month = $('#am-sl-month').val();
             if (!month) return;
@@ -511,6 +538,7 @@
 
                 var rows = res.data;
                 if (!rows.length) {
+                    $('#am-sl-chips').hide().empty();
                     $('#am-sl-tbody').html('<tr><td colspan="11" style="text-align:center;color:#999;padding:30px;">対象月のデータがありません</td></tr>');
                     return;
                 }
@@ -527,7 +555,7 @@
                         ? slEscHtml(r.hayatai_str)
                         : '<span class="am-ms-na">―</span>';
 
-                    html += '<tr>';
+                    html += '<tr data-affil="' + slEscHtml(r.affiliation_id) + '">';
                     html += '<td class="am-sl-code">' + slEscHtml(r.employee_code) + '</td>';
                     html += '<td class="am-sl-name"><div class="am-sl-name-inner"><span>' + slEscHtml(r.name) + '</span>' + (r.special_badge ? '<span class="am-sl-badge">' + slEscHtml(r.special_badge) + '</span>' : '') + '</div></td>';
                     html += '<td class="am-sl-num">' + r.attendance + '<span class="am-ms-unit">日</span></td>';
@@ -542,7 +570,9 @@
                     html += '</tr>';
                 });
 
+                slBuildChips(rows);
                 $('#am-sl-tbody').html(html);
+                slApplyFilter();
             }).fail(function () {
                 $('#am-sl-loading').hide();
                 $('#am-sl-table-wrap').show();
