@@ -16,6 +16,7 @@
     padding: 22px 28px 18px;
     margin-bottom: 24px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, .18);
+    position: relative;
 }
 
 .am-page-title {
@@ -1154,4 +1155,130 @@ tr[data-auto="false"] .am-kintai-select {
     justify-content: space-between;
     align-items: center;
     gap: 8px;
+}
+
+/* ===============================================================
+   最新データ取得（ページ右上のボタン＋ポップアップ）
+   ============================================================= */
+.am-page-header-actions {
+    position: absolute;
+    top: 18px;
+    right: 24px;
+}
+
+.am-btn-header {
+    height: 34px;
+    padding: 0 14px;
+    background: rgba(255, 255, 255, .16);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, .55);
+    font-size: 13px;
+}
+
+.am-btn-header:hover {
+    background: rgba(255, 255, 255, .28);
+}
+
+.am-btn-header.am-fetching .dashicons {
+    animation: am-fetch-spin 1.2s linear infinite;
+}
+
+@keyframes am-fetch-spin {
+    to { transform: rotate(360deg); }
+}
+
+@media (max-width: 782px) {
+    .am-page-header-actions {
+        position: static;
+        margin-bottom: 10px;
+    }
+}
+
+.am-modal {
+    position: fixed;
+    top: 0; right: 0; bottom: 0; left: 0;
+    background: rgba(0, 0, 0, .5);
+    z-index: 100000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.am-modal[hidden] {
+    display: none;
+}
+
+.am-modal-box {
+    position: relative;
+    background: #fff;
+    border-radius: 8px;
+    padding: 22px 26px;
+    width: 680px;
+    max-width: calc(100vw - 32px);
+    max-height: calc(100vh - 64px);
+    overflow: auto;
+}
+
+.am-modal-box h2 {
+    margin: 0 0 8px;
+    color: #1e3a5f;
+}
+
+.am-modal-close {
+    position: absolute;
+    top: 8px;
+    right: 12px;
+    border: 0;
+    background: none;
+    font-size: 24px;
+    line-height: 1;
+    cursor: pointer;
+    color: #555;
+}
+
+.am-modal-desc {
+    margin: 0 0 12px;
+    color: #555;
+    font-size: 13px;
+}
+
+.am-modal-note {
+    color: #8a6d00;
+    font-size: 12px;
+}
+
+.am-modal-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.am-modal-error {
+    color: #b32d2e;
+    font-size: 13px;
+}
+
+.am-modal-table {
+    width: 100%;
+    margin-top: 14px;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.am-modal-table th,
+.am-modal-table td {
+    border-bottom: 1px solid #e3e8ee;
+    padding: 6px 8px;
+    text-align: left;
+    vertical-align: top;
+}
+
+.am-modal-table th {
+    background: #f4f7fb;
+    color: #1e3a5f;
+}
+
+.am-modal-reload {
+    margin: 14px 0 0;
 }

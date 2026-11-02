@@ -570,4 +570,94 @@
         });
     }
 
+    /* ================================================================
+       最新データ取得（拘束時間）：ページ右上のボタン＋ポップアップ
+       ================================================================ */
+    (function () {
+        var $modal = $('#am-fetch-modal');
+        if (!$modal.length) return;
+
+        var $open = $('#am-fetch-open');
+        var $rows = $('#am-fetch-rows');
+        var timer = null;
+        var hadPending = false;
+
+        function esc(s) {
+            return $('<div>').text(String(s == null ? '' : s)).html();
+        }
+
+        function render(rows) {
+            var html = '';
+            var pending = false;
+            $.each(rows || [], function (i, r) {
+                if (r.status === 'pending') pending = true;
+                var color = r.status === 'imported' ? '#1a7f37' : (r.status === 'pending' ? '#555' : '#b32d2e');
+                html += '<tr><td>' + esc(r.month) + '</td><td>' + esc(r.requested_at) + '</td>'
+                      + '<td style="color:' + color + ';">' + esc(r.status_label) + '</td>'
+                      + '<td>' + esc(r.message) + '</td></tr>';
+            });
+            if (!html) html = '<tr><td colspan="4">依頼履歴はありません。</td></tr>';
+            $rows.html(html);
+
+            $open.toggleClass('am-fetching', pending);
+            $open.find('.am-fetch-open-label').text(pending ? '取得中…' : '最新データを取得');
+
+            if (hadPending && !pending) $('#am-fetch-reload').show();
+            hadPending = pending;
+
+            clearTimeout(timer);
+            if (pending) timer = setTimeout(poll, 15000);
+        }
+
+        function poll() {
+            $.post(amData.ajaxUrl, { action: 'am_fetch_status', nonce: amData.nonce }, function (res) {
+                if (res && res.success) render(res.data.rows);
+            });
+        }
+
+        function openModal() {
+            $modal.prop('hidden', false);
+            $('#am-fetch-month').trigger('focus');
+            poll();
+        }
+
+        function closeModal() {
+            $modal.prop('hidden', true);
+            $open.trigger('focus');
+        }
+
+        $open.on('click', openModal);
+        $('#am-fetch-close').on('click', closeModal);
+        $modal.on('mousedown', function (e) { if (e.target === this) closeModal(); });
+        $(document).on('keydown', function (e) {
+            if (e.key === 'Escape' && !$modal.prop('hidden')) closeModal();
+        });
+
+        $('#am-fetch-btn').on('click', function () {
+            var $btn = $(this);
+            var $msg = $('#am-fetch-msg');
+            $msg.text('');
+            $('#am-fetch-reload').hide();
+            $btn.prop('disabled', true);
+            $.post(amData.ajaxUrl, {
+                action: 'am_fetch_request',
+                nonce: amData.nonce,
+                month: $('#am-fetch-month').val()
+            }).done(function (res) {
+                if (res && res.success) {
+                    render(res.data.rows);
+                } else {
+                    $msg.text((res && res.data && res.data.message) || 'エラーが発生しました。');
+                }
+            }).fail(function () {
+                $msg.text('通信エラーが発生しました。');
+            }).always(function () {
+                $btn.prop('disabled', false);
+            });
+        });
+
+        // 取得待ちが残っている場合は、ページを開いた時点から自動で状況を確認する
+        render(amData.fetchRows || []);
+    })();
+
 })(jQuery);
