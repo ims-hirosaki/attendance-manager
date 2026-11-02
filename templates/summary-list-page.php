@@ -15,6 +15,14 @@ $page_url = admin_url( 'admin.php?page=attendance-manager-summary' );
     <div class="am-card">
         <div class="am-card-header"><span class="dashicons dashicons-search"></span> 対象月の選択</div>
         <div class="am-card-body">
+            <?php if ( count( $affil_map ) > 1 ) : ?>
+            <div class="am-affil-chips" id="am-sl-chips">
+                <button type="button" class="am-chip am-chip-active" data-affil="all">すべて</button>
+                <?php foreach ( $affil_map as $aid => $aname ) : ?>
+                <button type="button" class="am-chip" data-affil="<?php echo esc_attr( $aid ); ?>"><?php echo esc_html( $aname ); ?></button>
+                <?php endforeach; ?>
+            </div>
+            <?php endif; ?>
             <div class="am-form-row">
                 <div class="am-form-group">
                     <label class="am-label" for="am-sl-month">対象月</label>
@@ -36,7 +44,6 @@ $page_url = admin_url( 'admin.php?page=attendance-manager-summary' );
 
     <div class="am-card" id="am-sl-result">
         <div class="am-card-header"><span class="dashicons dashicons-list-view"></span> 集計一覧</div>
-        <div class="am-affil-chips" id="am-sl-chips" style="display:none; margin:14px 20px 0;"></div>
         <div id="am-sl-loading" style="display:none; padding:30px; text-align:center; color:#666;">
             <span class="dashicons dashicons-update am-spin"></span> 読み込み中...
         </div>

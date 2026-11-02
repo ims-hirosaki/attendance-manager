@@ -435,6 +435,14 @@ class Tanpopo_AttendanceManager {
     public function render_summary_list_page() {
         if ( ! current_user_can( 'access_custom_plugins' ) ) wp_die( esc_html__( '権限がありません。', 'attendance-manager' ), '', array( 'response' => 403 ) );
         $selected_month = isset( $_GET['am_month'] ) ? sanitize_text_field( wp_unslash( $_GET['am_month'] ) ) : date( 'Y-m' );
+        $affil_map = [];
+        foreach ( [ 'chokyo', 'jiba' ] as $cat ) {
+            $res = AM_DB::get_employees_by_category( $cat );
+            foreach ( (array) ( $res['employees'] ?? [] ) as $emp ) {
+                $aid = (int) ( $emp['affiliation_id'] ?? 0 );
+                if ( ! isset( $affil_map[ $aid ] ) ) $affil_map[ $aid ] = $emp['affiliation_name'] ?? '未所属';
+            }
+        }
         include AM_PLUGIN_DIR . 'templates/summary-list-page.php';
     }
 
