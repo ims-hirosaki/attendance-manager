@@ -394,6 +394,9 @@ class AM_Ajax {
         $year_month = sanitize_text_field( wp_unslash( $_POST['year_month'] ?? '' ) );
         if ( ! $year_month ) wp_send_json_error( [ 'message' => 'パラメータが不正です' ] );
 
+        $affil_raw = sanitize_text_field( wp_unslash( $_POST['affiliation_id'] ?? '' ) );
+        $affil_id  = ( $affil_raw === '' || $affil_raw === 'all' ) ? null : (int) $affil_raw;
+
         $rows = [];
 
         // 長距離
@@ -401,6 +404,7 @@ class AM_Ajax {
         foreach ( $chokyo_emps['employees'] as $emp ) {
             $employee_id = (int) ( $emp['employee_id'] ?? 0 );
             if ( ! $employee_id ) continue;
+            if ( $affil_id !== null && (int) ( $emp['affiliation_id'] ?? 0 ) !== $affil_id ) continue;
 
             $emp_info     = AM_DB::get_emp_info_by_id( $employee_id );
             $monthly_rows = AM_Compute_Chokyo::get_monthly_rows( $employee_id, $year_month, $emp_info['name'] );
@@ -417,6 +421,7 @@ class AM_Ajax {
         foreach ( $jiba_emps['employees'] as $emp ) {
             $employee_code = $emp['employee_code'] ?? '';
             if ( $employee_code === '' ) continue;
+            if ( $affil_id !== null && (int) ( $emp['affiliation_id'] ?? 0 ) !== $affil_id ) continue;
 
             $emp_info     = AM_DB::get_emp_info_by_code( $employee_code );
             $monthly_rows = AM_Compute_Jiba::get_monthly_rows( $employee_code, $year_month, $emp_info['name'] );
