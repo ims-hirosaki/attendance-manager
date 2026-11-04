@@ -166,5 +166,6 @@ RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
 | 積降時間管理 | `kintai-manager/v1` | `GET /employees` | 乗務員一覧 | 運用準備中 |
 | 積降時間管理 | `kintai-manager/v1` | `GET /incentive` | 1 人 × 1 か月の積降サマリ・セット別明細 | 運用準備中 |
 | 積降時間管理 | `kintai-manager/v1` | `GET /incentive-all` | 全乗務員の月次積降（`offset` / `limit` で分割可） | 試験的 |
+| 積降時間管理 | `kintai-manager/v1` | `GET /jisseki` | 運行実績（1 作業 = 1 行。`employee_code` 絞り込み・`offset` / `limit` 可） | 運用準備中 |
 
 ※ 他のプラグインの API を発行したら、この表に追記する。
