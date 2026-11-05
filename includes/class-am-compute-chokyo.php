@@ -481,17 +481,31 @@ class AM_Compute_Chokyo {
         return $count;
     }
 
+    /**
+     * 当月の所定休日数（休日ルールマスタに該当する日の数）を返す。
+     * 所定休の上限・警告 W1 の基準に使う。
+     */
+    private static function count_shitei_holidays( $rows ) {
+        $n = 0;
+        foreach ( $rows as $r ) {
+            if ( ! empty( $r['is_shitei_holiday'] ) ) $n++;
+        }
+        return $n;
+    }
+
     public static function apply_auto_kintai( $rows ) {
         $warnings = [];
 
-        // ① 所定休 2日超チェック
+        // ① 所定休 上限チェック
+        // 上限はその月の所定休日数（休日ルールマスタに該当する日数）。固定値は使わない。
         // ※ 超過分は '' に戻すが、is_shitei_holiday フラグは保持する
+        $shitei_limit = self::count_shitei_holidays( $rows );
         $shitei_count = 0;
         foreach ( $rows as &$r ) {
             if ( $r['is_manual'] ) continue; // 手動設定行はスキップ
             if ( $r['default_kintai'] === '所定休' ) {
                 $shitei_count++;
-                if ( $shitei_count > 2 ) $r['default_kintai'] = '';
+                if ( $shitei_count > $shitei_limit ) $r['default_kintai'] = '';
             }
         }
         unset( $r );
@@ -560,7 +574,7 @@ class AM_Compute_Chokyo {
         }
         $total = $houtei + $houtei_furi;
         if ( $total < 4 || $total > 5 ) array_unshift( $warnings, [ 'type' => 'warn', 'message' => sprintf( '法定休の合計（法定休%d日＋法定振替休%d日＝%d日）が正常範囲（4〜5日）を外れています。', $houtei, $houtei_furi, $total ) ] );
-        if ( $shitei > 2 ) array_unshift( $warnings, [ 'type' => 'warn', 'message' => '所定休が2日を超えています。' ] );
+        if ( $shitei > $shitei_limit ) array_unshift( $warnings, [ 'type' => 'warn', 'message' => sprintf( '所定休（%d日）が当月の所定休日数（%d日）を超えています。', $shitei, $shitei_limit ) ] );
         if ( ! empty( $rows ) ) $rows[0]['_alerts'] = $warnings;
         return $rows;
     }
@@ -574,7 +588,8 @@ class AM_Compute_Chokyo {
         }
         $total = $houtei + $houtei_furi;
         if ( $total < 4 || $total > 5 ) $alerts[] = [ 'type' => 'warn', 'message' => sprintf( '法定休の合計（%d日）が正常範囲（4〜5日）を外れています。', $total ) ];
-        if ( $shitei > 2 ) $alerts[] = [ 'type' => 'warn', 'message' => '所定休が2日を超えています。' ];
+        $shitei_limit = self::count_shitei_holidays( $rows );
+        if ( $shitei > $shitei_limit ) $alerts[] = [ 'type' => 'warn', 'message' => sprintf( '所定休（%d日）が当月の所定休日数（%d日）を超えています。', $shitei, $shitei_limit ) ];
         if ( ! empty( $rows ) ) $rows[0]['_alerts'] = $alerts;
         return $rows;
     }
