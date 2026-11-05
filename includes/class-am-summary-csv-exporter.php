@@ -9,7 +9,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
  */
 class AM_Summary_CSV_Exporter {
 
-    private static $affil_id = null;
+    private static $affil_ids = null;
 
     public static function download() {
         if ( ! current_user_can( 'access_custom_plugins' ) ) {
@@ -23,8 +23,7 @@ class AM_Summary_CSV_Exporter {
             wp_die( esc_html__( '対象月が不正です。', 'attendance-manager' ), '', [ 'response' => 400 ] );
         }
 
-        $affil_raw = sanitize_text_field( wp_unslash( $_GET['affiliation_id'] ?? '' ) );
-        self::$affil_id = ( $affil_raw === '' || $affil_raw === 'all' ) ? null : (int) $affil_raw;
+        self::$affil_ids = AM_Ajax::parse_affiliation_ids( $_GET['affiliation_id'] ?? '' );
 
         nocache_headers();
         header( 'Content-Type: text/csv; charset=UTF-8' );
@@ -51,7 +50,7 @@ class AM_Summary_CSV_Exporter {
     private static function write_category( $output, $category, $year_month ) {
         $employees = AM_DB::get_employees_by_category( $category );
         foreach ( $employees['employees'] as $employee ) {
-            if ( self::$affil_id !== null && (int) ( $employee['affiliation_id'] ?? 0 ) !== self::$affil_id ) continue;
+            if ( self::$affil_ids !== null && ! in_array( (int) ( $employee['affiliation_id'] ?? 0 ), self::$affil_ids, true ) ) continue;
             if ( 'chokyo' === $category ) {
                 // 長距離の計算処理は、乗務員コードではなく不変の社員IDを受け取る。
                 $key = (int) ( $employee['employee_id'] ?? 0 );
