@@ -153,25 +153,28 @@
     /* ================================================================
        所属チップ → 社員セレクトフィルタリング（共通）
        ================================================================ */
-    // 選択中の所属IDを配列で返す。「すべて」選択時は 'all'
+    // 選択中の所属IDを配列で返す。個別チップがすべて選択されていれば 'all'
     var getSelectedAffils = function ($chips) {
-        if ($chips.find('.am-chip[data-affil="all"]').hasClass('am-chip-active')) return 'all';
-        return $chips.find('.am-chip.am-chip-active').map(function () { return String($(this).data('affil')); }).get();
+        var $indiv = $chips.find('.am-chip').not('[data-affil="all"]');
+        var $on    = $indiv.filter('.am-chip-active');
+        if ($on.length === $indiv.length) return 'all';
+        return $on.map(function () { return String($(this).data('affil')); }).get();
     };
 
-    // 複数選択：個別チップはON/OFF切り替え、「すべて」は他を解除。何も選ばれなくなったら「すべて」に戻す
+    // 複数選択：「すべて」は全チップを選択状態にするトリガー。個別チップはON/OFF切り替え
+    // （最後の1つは外せない）。「すべて」は個別チップが全部ONのときだけ選択表示にする
     $(document).on('click', '.am-chip', function () {
         var $chip  = $(this);
         var $chips = $chip.closest('.am-affil-chips');
         var $all   = $chips.find('.am-chip[data-affil="all"]');
-        if ($chip.data('affil') === 'all') {
-            $chips.find('.am-chip').removeClass('am-chip-active');
-            $all.addClass('am-chip-active');
+        var $indiv = $chips.find('.am-chip').not($all);
+        if ($chip.is($all)) {
+            $indiv.addClass('am-chip-active');
         } else {
+            if ($chip.hasClass('am-chip-active') && $indiv.filter('.am-chip-active').length === 1) return;
             $chip.toggleClass('am-chip-active');
-            $all.removeClass('am-chip-active');
-            if (!$chips.find('.am-chip.am-chip-active').length) $all.addClass('am-chip-active');
         }
+        $all.toggleClass('am-chip-active', $indiv.length === $indiv.filter('.am-chip-active').length);
         var affils = getSelectedAffils($chips);
         var $select = $('.am-select[name="am_employee_id"], .am-select[name="am_emp"]');
         var $options = $select.find('option[data-affil]');

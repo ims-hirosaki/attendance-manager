@@ -33,7 +33,7 @@ $page_url = admin_url( 'admin.php?page=attendance-manager-jiba' );
                 <div class="am-affil-chips">
                     <button type="button" class="am-chip am-chip-active" data-affil="all">すべて</button>
                     <?php foreach ( $affil_map as $aid => $aname ) : ?>
-                    <button type="button" class="am-chip" data-affil="<?php echo esc_attr( $aid ); ?>"><?php echo esc_html( $aname ); ?></button>
+                    <button type="button" class="am-chip am-chip-active" data-affil="<?php echo esc_attr( $aid ); ?>"><?php echo esc_html( $aname ); ?></button>
                     <?php endforeach; ?>
                 </div>
                 <?php endif; ?>
