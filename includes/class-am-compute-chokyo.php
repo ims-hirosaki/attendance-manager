@@ -599,43 +599,9 @@ class AM_Compute_Chokyo {
         $month_end_str   = date( 'Y-m-t', strtotime( $month_start_str ) );
         $history = AM_DB::get_crew_codes_for_period( $employee_id, $month_start_str, $month_end_str );
         $codes = array_values( array_filter( array_map( function( $row ) { return $row['crew_code'] ?? ''; }, $history ) ) );
-        $carryover = self::compute_live_carryover( 'chokyo', $employee_id, $year_month );
-        if ( $carryover === false ) {
-            // 前月を再計算できない場合のみ、保存済みの繰越データを使う
-            $carryover = AM_DB::get_chokyo_carryover( $employee_id, $year_month, $codes );
-            if ( ! empty( $carryover['_conflict'] ) ) $carryover = null;
-        }
+        $carryover = AM_DB::get_chokyo_carryover( $employee_id, $year_month, $codes );
+        if ( ! empty( $carryover['_conflict'] ) ) $carryover = null;
         return self::_build_weekly_static( $employee_id, $year_month, $monthly_rows, $month_start_str, $month_end_str, $carryover, 'chokyo' );
-    }
-
-    /**
-     * 前月の月末をまたぐ週（次月繰越）を前月の最新データから再計算して返す。
-     *
-     * 繰越テーブルは前月の画面を開いたときにしか更新されないため、前月のデータが
-     * 後から取得・編集されると当月の「前月繰越残業」が古い値のままになっていた。
-     * 当月の週集計時に毎回前月を計算し直すことで、前月画面の「次月繰越」と常に一致させる。
-     * 計算結果は従来どおり繰越テーブルにも保存される。
-     *
-     * @return array|null|false 繰越データ。前月末が土曜で繰越週がなければ null、計算できなければ false。
-     */
-    public static function compute_live_carryover( $type, $key, $year_month ) {
-        $prev_start = date( 'Y-m-01', strtotime( $year_month . '-01 -1 month' ) );
-        $prev_end   = date( 'Y-m-t', strtotime( $prev_start ) );
-        $prev_ym    = substr( $prev_start, 0, 7 );
-        if ( (int) date( 'w', strtotime( $prev_end ) ) === 6 ) return null;
-
-        if ( $type === 'chokyo' ) {
-            $emp = AM_DB::get_emp_info_by_id( $key );
-            if ( ! $emp ) return false;
-            $rows = self::get_monthly_rows( $key, $prev_ym, $emp['name'] );
-        } else {
-            $emp = AM_DB::get_emp_info_by_code( $key );
-            if ( ! $emp ) return false;
-            $rows = AM_Compute_Jiba::get_monthly_rows( $key, $prev_ym, $emp['name'] );
-        }
-        // 前月の次月繰越週は前月の第1週と重ならないため、前月側の前月繰越は不要
-        $prev_weekly = self::_build_weekly_static( $key, $prev_ym, $rows, $prev_start, $prev_end, null, $type );
-        return $prev_weekly['next_carryover'] ?? null;
     }
 
     public static function _build_weekly_static( $key, $year_month, $monthly_rows, $month_start_str, $month_end_str, $carryover, $type ) {
@@ -659,9 +625,8 @@ class AM_Compute_Chokyo {
         $first_dow      = (int) date( 'w', strtotime( $month_start_str ) );
         $week_start_str = date( 'Y-m-d', strtotime( $month_start_str . ' -' . $first_dow . ' days' ) );
 
-        $weeks          = [];
-        $week_index     = 1;
-        $next_carryover = null;
+        $weeks      = [];
+        $week_index = 1;
 
         // 前月繰越残業行（carry_days > 0 のときのみ表示）
         if ( $carry_days > 0 ) {
@@ -768,7 +733,6 @@ class AM_Compute_Chokyo {
                     'week_overtime_min' => $week_overtime,
                     'days'              => $prev_days,  // ← 前月側の日数（04/26〜04/30 = 5日）
                 ];
-                $next_carryover = $save_data;
                 if ( $type === 'chokyo' ) AM_DB::save_chokyo_carryover( $key, $next_month, $save_data );
                 else                     AM_DB::save_jiba_carryover( $key, $next_month, $save_data );
             }
@@ -825,7 +789,7 @@ class AM_Compute_Chokyo {
         $total['break_min'] = 0;
         foreach ( $weeks as $w ) { if ( ! $w['is_prev_carry'] ) $total['break_min'] += $w['break_min']; }
 
-        return [ 'weeks' => $weeks, 'total' => $total, 'next_carryover' => $next_carryover ];
+        return [ 'weeks' => $weeks, 'total' => $total ];
     }
 
     public static function get_monthly_summary( $monthly_rows, $weekly, $employee_id, $year_month ) {
