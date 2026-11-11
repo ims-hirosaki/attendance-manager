@@ -368,7 +368,8 @@ class AM_Compute_Jiba {
     public static function get_weekly_summary( $employee_code, $year_month, $monthly_rows ) {
         $month_start_str = $year_month . '-01';
         $month_end_str   = date( 'Y-m-t', strtotime( $month_start_str ) );
-        $carryover       = AM_DB::get_jiba_carryover( $employee_code, $year_month );
+        $carryover       = AM_Compute_Chokyo::compute_live_carryover( 'jiba', $employee_code, $year_month );
+        if ( $carryover === false ) $carryover = AM_DB::get_jiba_carryover( $employee_code, $year_month );
         // _build_weekly は AM_Compute_Chokyo に共通実装されているため委譲
         return AM_Compute_Chokyo::_build_weekly_static( $employee_code, $year_month, $monthly_rows, $month_start_str, $month_end_str, $carryover, 'jiba' );
     }
