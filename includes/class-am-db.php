@@ -230,9 +230,9 @@ class AM_DB {
             $status['unmigrated_carryovers'] = (int) $wpdb->get_var( "SELECT COUNT(*) FROM `{$carry}` WHERE employee_id IS NULL" );
             $status['carryover_conflicts'] = (int) $wpdb->get_var(
                 "SELECT COUNT(*) FROM (
-                    SELECT employee_id, year_month FROM `{$carry}`
+                    SELECT employee_id, `year_month` FROM `{$carry}`
                     WHERE employee_id IS NOT NULL
-                    GROUP BY employee_id, year_month HAVING COUNT(*) > 1
+                    GROUP BY employee_id, `year_month` HAVING COUNT(*) > 1
                  ) conflicts"
             );
         }
@@ -316,7 +316,7 @@ class AM_DB {
         $params = array_merge( $crew_codes, [ $year_month ] );
         $legacy = $wpdb->get_results( $wpdb->prepare(
             "SELECT * FROM `{$wpdb->prefix}am_chokyo_carryover`
-             WHERE employee_id IS NULL AND crew_code IN ({$placeholders}) AND year_month = %s
+             WHERE employee_id IS NULL AND crew_code IN ({$placeholders}) AND `year_month` = %s
              ORDER BY id ASC",
             ...$params
         ), ARRAY_A );
@@ -335,12 +335,12 @@ class AM_DB {
         $crew_code = trim( (string) ( $emp['crew_code'] ?? '' ) );
         if ( ! $employee_id || $crew_code === '' ) return false;
         $existing = $wpdb->get_row( $wpdb->prepare(
-            "SELECT * FROM `{$table}` WHERE employee_id = %d AND year_month = %s ORDER BY id DESC LIMIT 1",
+            "SELECT * FROM `{$table}` WHERE employee_id = %d AND `year_month` = %s ORDER BY id DESC LIMIT 1",
             (int) $employee_id, $year_month
         ), ARRAY_A );
         if ( ! $existing ) {
             $existing = $wpdb->get_row( $wpdb->prepare(
-                "SELECT * FROM `{$table}` WHERE employee_id IS NULL AND crew_code = %s AND year_month = %s LIMIT 1",
+                "SELECT * FROM `{$table}` WHERE employee_id IS NULL AND crew_code = %s AND `year_month` = %s LIMIT 1",
                 $crew_code, $year_month
             ), ARRAY_A );
         }
