@@ -721,7 +721,9 @@ class AM_Compute_Chokyo {
                 $pe = new DateTime( $month_end_str );
                 while ( $pc <= $pe ) { $prev_days++; $pc->modify( '+1 day' ); }
 
-                $next_month = date( 'Y-m', strtotime( $month_end_str . ' +1 month' ) );
+                // 月末日に +1 month すると、31日の月の翌月が30日までのとき翌々月になる
+                // （例：2026-08-31 +1 month → 2026-10-01）ため、必ず月初日から計算する。
+                $next_month = date( 'Y-m', strtotime( $month_start_str . ' +1 month' ) );
                 $save_data  = [
                     'labor_min'         => $net_labor,
                     'overtime_labor_min' => $sum['overtime_labor_min'] - ( $is_first_week ? $carry_overtime_labor : 0 ),
