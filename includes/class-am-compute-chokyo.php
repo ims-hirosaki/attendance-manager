@@ -704,7 +704,11 @@ class AM_Compute_Chokyo {
 
             // 週残業 = 週の労働時間合計が40時間（2400分）超の分
             $week_overtime      = $sum['overtime_labor_min'] > 2400 ? $sum['overtime_labor_min'] - 2400 : 0;
-            $confirmed_overtime = max( $sum['overtime_min'], $week_overtime );
+            // 確定残業は「週全体の日残業合計」と週残業の大きい方。
+            // 月をまたぐ第1週は、前月側の日残業（繰越保存済み）も日残業合計に含める。
+            // 表示用の日残業（day_overtime_min）は当月分のままにし、月間の日残業合計の二重計上を避ける。
+            $day_overtime_for_confirm = $sum['overtime_min'] + ( ( $is_first_week && $carry_days > 0 ) ? $carry_overtime : 0 );
+            $confirmed_overtime = max( $day_overtime_for_confirm, $week_overtime );
 
             // 表示用の当月分のみのnet値（繰越分を除く）
             $net_kousoku  = $sum['kousoku_min']  - ( $is_first_week ? $carry_kousoku  : 0 );
